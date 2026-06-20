@@ -1,16 +1,26 @@
-# 急診 ICD-10 外傷速查
+# 急診 ICD-10 速查
 
-輸入英文/中文診斷關鍵字 → 即時回傳 ICD-10-CM 代碼 + 官方繁中翻譯。離線單一 HTML 檔，手機/電腦雙擊即用。
+輸入英文/中文診斷關鍵字 → 即時回傳 ICD-10-CM 代碼 + 官方繁中翻譯。單一 HTML 檔，純前端、可離線。
+
+## 🔗 線上版（測試中）
+
+**https://xyzkiwi.github.io/icd10-ed-quickref/**
+
+手機加入主畫面就像 App。純前端運算，不蒐集任何輸入內容。⚠️ 僅供臨床查詢輔助，非官方編碼系統，最終以院內系統與專業判斷為準（詳見網頁底部免責聲明）。
 
 ## 怎麼用
 
-**最簡單**：把 `dist/icd_ed.html` 寄給自己或丟到 iCloud，手機/電腦點開就能用。完全離線、不連網、不送任何資料出去。
+- **線上**：開上面網址，手機可加到主畫面。
+- **離線**：`dist/icd_ed.html`（或 repo 根目錄 `index.html`）寄給自己 / 丟 iCloud，點開即用，完全離線。
 
 查詢範例：
 - `contusion left forearm` → S50.12XA 左側前臂挫傷
-- `lt radial fx` → 左橈骨骨折候選清單（縮寫、拼錯字都能命中）
+- `lt radial fx` → 左橈骨骨折候選（縮寫、拼錯字都能命中）
+- `abscess anus` → K61.0 肛門膿瘍（俗稱靠官方字母索引命中）
 - `頭部撕裂傷` / `前臂挫傷` → 中文也能查
-- 點代碼可複製；外傷碼可切換第 7 碼（初診 A / 後續 D / 後遺症 S / 開放型等）
+- `N20.1` / `N20` → 代碼反查診斷
+- 點整個框框即複製代碼；外傷碼可切換第 7 碼（初診 A / 後續 D / 後遺症 S / 開放型等）
+- 勾「高醫模式」→ 複製時去掉小數點（配合診間系統）
 
 ## 設計重點
 
@@ -41,7 +51,17 @@ python3 src/build_html.py     # 注入 search_core + 資料 → dist/icd_ed.html
 
 # 3. 測試
 node src/test_search.js       # 36 案例 + 極性守門應全過
+
+# 4. 更新線上版（GitHub Pages）
+cp dist/icd_ed.html index.html
+git add -A && git commit -m "update" && git push   # 1-2 分鐘後線上自動更新
 ```
+
+## 部署架構
+
+- repo：`xyzKIWI/icd10-ed-quickref`（public）
+- GitHub Pages：`main` 分支根目錄 `index.html` → 自動發佈
+- repo 只含 `index.html` + `src/` 腳本 + README；大型原始資料（XLSX/zip/CSV）走 `.gitignore`，不進版控
 
 ## 檔案結構
 
