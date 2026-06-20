@@ -93,7 +93,7 @@ function indexEntry(e,kind){
   }
   return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh};
 }
-function scoreEntry(item,qtoks,cjk){
+function scoreEntry(item,qtoks,cjk,qHasSide){
   let score=0, matched=0;
   const hay=item.hay;
   for(const qt of qtoks){
@@ -130,6 +130,8 @@ function scoreEntry(item,qtoks,cjk){
   // （讓單純「laceration」優先開放性傷口碼，而非肌腱/血管/神經的專一傷）
   let pen=0;
   for(const w of SPECIFIER){ if(item.hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.4; if(pen>=1.2)break; } }
+  // 沒查左右時，帶 left/right 的碼往下壓，讓「未明示側性」優先（急診常不特別 code 左右）
+  if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.3;
   return score*cov - pen;
 }
 function buildCode(stem,ch){
@@ -183,10 +185,11 @@ function searchCore(IDX,q,scope){
   if(!q.trim())return [];
   if(isCodeQuery(q)) return codeSearch(IDX,q,scope);
   const qtoks=norm(q), cjk=hasCJK(q);
+  const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
   const res=[];
   for(const item of IDX){
     if(scope!=="all"&&item.kind!==scope)continue;
-    let sc=scoreEntry(item,qtoks,cjk);
+    let sc=scoreEntry(item,qtoks,cjk,qHasSide);
     if(sc>0){
       if(item.e.b) sc*=1.4;               // 急診常見診斷加權
       res.push([sc,item]);

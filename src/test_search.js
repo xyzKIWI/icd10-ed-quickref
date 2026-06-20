@@ -75,6 +75,15 @@ function polarityGuard(){
   console.log((ok?"✅":"❌")+" 極性守門：traumatic ICH 前5名 = "+r.join(", "));
   return ok;
 }
+// 側別守門：沒查左右時，未明示側性(S06.36x)應排在 left(S06.35x)/right(S06.34x)之前
+function lateralityGuard(){
+  const r=C.searchCore(IDX,"traumatic ICH","all").slice(0,5).map(x=>x[1].e.c);
+  const uns=r.findIndex(c=>c.startsWith("S06.36"));
+  const side=r.findIndex(c=>c.startsWith("S06.34")||c.startsWith("S06.35"));
+  const ok = uns>=0 && (side<0 || uns<side);
+  console.log((ok?"✅":"❌")+" 側別守門：traumatic ICH(未指定側) 前5名 = "+r.join(", "));
+  return ok;
+}
 
 let pass=0;
 for(const [q,exp] of cases){
@@ -93,5 +102,6 @@ for(let i=0;i<N;i++) for(const q of qs) C.searchCore(IDX,q,"all");
 const ms=(Date.now()-t0)/(N*qs.length);
 const guardOk = polarityGuard();
 const fingerOk = fingerGuard();
+const latOk = lateralityGuard();
 console.log(`=== ${pass}/${cases.length} 通過 ｜ 平均單次查詢 ${ms.toFixed(1)} ms（${IDX.length} 條目）===`);
-process.exit(pass===cases.length && guardOk && fingerOk?0:1);
+process.exit(pass===cases.length && guardOk && fingerOk && latOk?0:1);
