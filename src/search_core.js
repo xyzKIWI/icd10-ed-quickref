@@ -213,22 +213,29 @@ function codeSearch(IDX,q,scope){
   return res.slice(0,25);
 }
 
-function searchCore(IDX,q,scope){
-  if(!q.trim())return [];
-  if(isCodeQuery(q)) return codeSearch(IDX,q,scope);
+// prefixes：可選的 ICD 碼段白名單（小人圖用）。給了就「硬過濾」只留這些碼段，
+// 且查無時不 fallback 全域（防錯碼）。文字 q 仍負責在白名單內排序（如 back/chest 細分）。
+function searchCore(IDX,q,scope,prefixes){
+  const pf = (prefixes && prefixes.length) ? prefixes : null;
+  if(!q.trim() && !pf) return [];
+  if(!pf && isCodeQuery(q)) return codeSearch(IDX,q,scope);
   const qtoks=norm(q), cjk=hasCJK(q);
   const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
+  const hasText = !!q.trim();
   const res=[];
   for(const item of IDX){
     if(scope!=="all"&&item.kind!==scope)continue;
-    let sc=scoreEntry(item,qtoks,cjk,qHasSide);
-    if(sc>0){
-      if(item.e.b) sc*=1.4;               // 急診常見診斷加權
-      res.push([sc,item]);
+    if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
+    let sc;
+    if(hasText){
+      sc=scoreEntry(item,qtoks,cjk,qHasSide);
+      if(sc>0 && item.e.b) sc*=1.4;       // 急診常見診斷加權
+    }else{
+      sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
     }
+    if(sc>0) res.push([sc,item]);
   }
-  // 排序：分數 → 常見 → 代碼短者（較通用）優先
-  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0) || a[1].e.c.length-b[1].e.c.length);
-  return res.slice(0,25);
+  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0) || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
+  return res.slice(0, pf ? 60 : 25);     // 部位瀏覽允許多一點
 }
 if(typeof module!=="undefined")module.exports={SEV_ORDER,SYN,hasCJK,norm,levLE,indexEntry,scoreEntry,buildCode,whyHit,needMore,searchCore,isCodeQuery};
