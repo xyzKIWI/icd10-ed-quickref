@@ -54,6 +54,8 @@ const cases = [
   ["rt middle toe laceration","S91.11"],         // 腳趾：middle toe→lesser toe 撕裂傷
   ["big toe laceration","S91.11"],               // great toe
   ["toe laceration","S91.1"],
+  ["fracture left tibia","S82"],
+  ["fracture left fibula","S82"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

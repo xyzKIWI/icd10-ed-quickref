@@ -5,6 +5,7 @@ dist/
 *.xlsx
 *.zip
 *.corrupted_bak
+.DS_Store
 
 # 本機 agent/記憶檔，不公開
 AGENTS.md

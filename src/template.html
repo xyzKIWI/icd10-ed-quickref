@@ -5,29 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>急診 ICD-10 速查</title>
 <style>
-  :root{ --bg:#0f1720; --card:#172230; --line:#26344a; --txt:#e7eef7; --sub:#8aa0b8;
-         --accent:#4ea1ff; --code:#ffd479; --hit:#7fe0a0; --warn:#ffb86b; }
+  :root{ color-scheme:light; --bg:#f4f7fb; --card:#ffffff; --panel:#eef3f8; --field:#ffffff;
+         --line:#c9d5e3; --txt:#142033; --sub:#5d7088; --muted:#7d8fa3;
+         --accent:#1769d1; --accent2:#0f7f6e; --code:#8a5200; --hit:#087a47; --warn:#a85b00;
+         --header:rgba(244,247,251,.94); --active:#dbeafe; --activeTxt:#0b3b78; --zone:#cbd8e6; --zoneOn:#1769d1; }
+  :root[data-theme="dark"]{ color-scheme:dark; --bg:#0f1720; --card:#172230; --panel:#141d29; --field:#0b1119;
+         --line:#26344a; --txt:#e7eef7; --sub:#8aa0b8; --muted:#5d7088;
+         --accent:#4ea1ff; --accent2:#39c6a8; --code:#ffd479; --hit:#7fe0a0; --warn:#ffb86b;
+         --header:rgba(15,23,32,.94); --active:#193a5f; --activeTxt:#dceeff; --zone:#2b3d54; --zoneOn:#4ea1ff; }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
        background:var(--bg);color:var(--txt);-webkit-text-size-adjust:100%}
-  header{position:sticky;top:0;background:linear-gradient(#0f1720,#0f1720ee);
+  header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(14px);
          padding:14px 14px 10px;border-bottom:1px solid var(--line);z-index:5}
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   h1{font-size:16px;margin:0 0 8px;color:var(--sub);font-weight:600;letter-spacing:.3px}
-  h1 small{color:#5d7088;font-weight:400}
+  .topbar h1{margin:0;flex:1}
+  h1 small{color:var(--muted);font-weight:400}
+  .iconbtn{width:36px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--field);
+       color:var(--sub);font-size:17px;cursor:pointer}
+  .iconbtn:active{transform:translateY(1px)}
   #q{width:100%;font-size:19px;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
-     background:#0b1119;color:var(--txt);outline:none}
+     background:var(--field);color:var(--txt);outline:none}
   #q:focus{border-color:var(--accent)}
   .hint{color:var(--sub);font-size:12px;margin:7px 2px 0;line-height:1.5}
   .scope{display:flex;gap:6px;margin-top:9px}
   .scope button{flex:1;padding:7px;border-radius:9px;border:1px solid var(--line);
-       background:#0b1119;color:var(--sub);font-size:13px;cursor:pointer}
-  .scope button.on{background:var(--accent);color:#04121f;border-color:var(--accent);font-weight:700}
+       background:var(--field);color:var(--sub);font-size:13px;cursor:pointer}
+  .scope button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
   main{padding:10px 12px 60px;max-width:760px;margin:0 auto}
   .card{background:var(--card);border:1px solid var(--line);border-radius:13px;
         padding:12px 13px;margin-bottom:10px;cursor:pointer;transition:border-color .1s,background .1s}
   .card:hover{border-color:var(--accent)}
-  .card:active{background:#1d2b3d}
-  .cphint{font-size:10px;color:#46566b;margin-left:auto}
+  .card:active{background:var(--panel)}
+  .cphint{font-size:10px;color:var(--muted);margin-left:auto}
   .kmu{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;color:var(--sub);cursor:pointer;user-select:none}
   .kmu input{width:16px;height:16px;accent-color:var(--accent)}
   .kmu b{color:var(--warn)}
@@ -37,27 +48,61 @@
   .code:active{opacity:.6}
   .copyok{color:var(--hit);font-size:12px;margin-left:4px}
   .en{font-size:15px;margin-top:5px}
-  .zh{font-size:16px;color:#cfe0f2;margin-top:2px}
+  .zh{font-size:16px;color:var(--txt);margin-top:2px}
   .why{font-size:11.5px;color:var(--sub);margin-top:6px}
   .why b{color:var(--hit);font-weight:600}
   .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
   .chip{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);
-        background:#0b1119;color:var(--sub);cursor:pointer;font-family:ui-monospace,monospace}
-  .chip.on{background:#1e3a2b;border-color:var(--hit);color:var(--hit);font-weight:700}
+        background:var(--field);color:var(--sub);cursor:pointer;font-family:ui-monospace,monospace}
+  .chip.on{background:var(--active);border-color:var(--accent);color:var(--activeTxt);font-weight:700}
   .miss{color:var(--warn);font-size:12px;margin-top:7px;line-height:1.45}
   .empty{color:var(--sub);text-align:center;margin-top:40px;font-size:14px;line-height:1.7}
   .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;
-       background:#23344a;color:var(--sub);vertical-align:middle;margin-left:6px}
-  .tag.tr{background:#3a2330;color:#ff9bbf}
-  footer{color:#46566b;font-size:11px;text-align:center;padding:14px}
+       background:var(--panel);color:var(--sub);vertical-align:middle;margin-left:6px}
+  .tag.tr{background:var(--active);color:var(--activeTxt)}
+  .trauma{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px;margin-bottom:12px}
+  .trauma.hide{display:none}
+  .trauma-open{display:none;width:100%;border:1px solid var(--line);border-radius:10px;background:var(--card);
+        color:var(--sub);padding:9px 11px;margin-bottom:10px;font-size:13px;text-align:left;cursor:pointer}
+  .trauma-open.show{display:block}
+  .trauma-open b{color:var(--accent)}
+  .refine{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px 11px;margin-bottom:10px}
+  .refine.hide{display:none}
+  .refine-title{font-size:12.5px;color:var(--sub);margin-bottom:8px}
+  .refine-title b{color:var(--txt)}
+  .tool-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .tool-title{font-size:14px;font-weight:700;color:var(--txt);flex:1}
+  .tool-state{display:block;margin-top:3px;font-size:11.5px;font-weight:400;color:var(--sub)}
+  .clearbtn{border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--sub);padding:7px 10px;font-size:12px;cursor:pointer}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+  .seg button{border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--sub);padding:7px 10px;font-size:12px;cursor:pointer}
+  .seg button.on{background:var(--active);border-color:var(--accent);color:var(--activeTxt);font-weight:700}
+  .figure-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .figure-pane{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px;min-width:0}
+  .figure-title{font-size:12px;color:var(--sub);text-align:center;margin-bottom:4px}
+  .body-svg{width:100%;height:auto;display:block;max-height:310px}
+  .body-line{fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
+  .zone{fill:var(--zone);stroke:var(--line);stroke-width:1.4;opacity:.92;cursor:pointer;transition:fill .12s,opacity .12s,stroke .12s}
+  .zone:hover,.zone.on{fill:var(--zoneOn);stroke:var(--accent);opacity:1}
+  .body-label{font-size:8px;fill:var(--muted)}
+  footer{color:var(--muted);font-size:11px;text-align:center;padding:14px}
   .disclaimer{max-width:760px;margin:18px auto 0;padding:12px 14px;font-size:11.5px;line-height:1.7;
-        color:#8aa0b8;background:#141d29;border:1px solid var(--line);border-radius:10px}
+        color:var(--sub);background:var(--panel);border:1px solid var(--line);border-radius:10px}
   .disclaimer b{color:var(--warn)}
+  @media (max-width:560px){
+    main{padding-left:10px;padding-right:10px}
+    .figure-grid{gap:8px}
+    .trauma{padding:10px}
+    .seg button{padding:7px 8px}
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>急診 ICD-10 速查 <small id="meta"></small></h1>
+  <div class="topbar">
+    <h1>急診 ICD-10 速查 <small id="meta"></small></h1>
+    <button class="iconbtn" id="themeBtn" type="button" aria-label="切換明暗模式" title="切換明暗模式">☀</button>
+  </div>
   <input id="q" autocomplete="off" autocapitalize="off" spellcheck="false"
          placeholder="例：contusion left forearm、左前臂挫傷、lt radial fx、頭部撕裂傷">
   <div class="scope">
@@ -69,7 +114,102 @@
   <div class="hint">支援英文/中文、縮寫(fx, lac, lt/rt)、拼錯字也能命中。點整個框框即複製代碼。</div>
   <label class="kmu"><input type="checkbox" id="kmuTog"> <span><b>高醫模式</b>：複製時去掉小數點</span></label>
 </header>
-<main id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></main>
+<main>
+  <section class="trauma" aria-label="外傷小人圖">
+    <div class="tool-head">
+      <div class="tool-title">外傷小人圖<span class="tool-state" id="traumaState">撕裂傷 · 自動側別</span></div>
+      <button class="clearbtn" id="clearTrauma" type="button">清除</button>
+    </div>
+    <div class="seg" id="injurySeg" aria-label="外傷類型">
+      <button type="button" class="on" data-injury="laceration">撕裂傷</button>
+      <button type="button" data-injury="contusion">挫傷</button>
+      <button type="button" data-injury="fracture">骨折</button>
+      <button type="button" data-injury="sprain">扭傷</button>
+      <button type="button" data-injury="abrasion">擦傷</button>
+      <button type="button" data-injury="burn">燒燙傷</button>
+    </div>
+    <div class="seg" id="sideSeg" aria-label="側別">
+      <button type="button" class="on" data-side-mode="auto">自動</button>
+      <button type="button" data-side-mode="none">未指定</button>
+      <button type="button" data-side-mode="left">左</button>
+      <button type="button" data-side-mode="right">右</button>
+      <button type="button" data-side-mode="bilateral">雙側</button>
+    </div>
+    <div class="figure-grid">
+      <div class="figure-pane">
+        <div class="figure-title">前面</div>
+        <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體前面">
+          <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
+          <circle class="zone" data-part="face" data-side="" cx="70" cy="28" r="16"><title>臉部</title></circle>
+          <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>頸部</title></rect>
+          <path class="zone" data-part="chest" data-side="" d="M48 58 L92 58 L98 104 L42 104 Z"><title>胸部</title></path>
+          <path class="zone" data-part="abdomen" data-side="" d="M43 105 L97 105 L91 145 L49 145 Z"><title>腹部</title></path>
+          <path class="zone" data-part="hip" data-side="" d="M48 146 L92 146 L85 166 L55 166 Z"><title>髖部</title></path>
+          <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
+          <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
+          <path class="zone" data-part="upper_arm" data-side="right" d="M29 68 L19 109 L31 112 L39 81 Z"><title>右上臂</title></path>
+          <path class="zone" data-part="upper_arm" data-side="left" d="M111 68 L121 109 L109 112 L101 81 Z"><title>左上臂</title></path>
+          <circle class="zone" data-part="elbow" data-side="right" cx="24" cy="117" r="8"><title>右肘</title></circle>
+          <circle class="zone" data-part="elbow" data-side="left" cx="116" cy="117" r="8"><title>左肘</title></circle>
+          <path class="zone" data-part="forearm" data-side="right" d="M20 124 L14 161 L26 163 L31 124 Z"><title>右前臂</title></path>
+          <path class="zone" data-part="forearm" data-side="left" d="M120 124 L126 161 L114 163 L109 124 Z"><title>左前臂</title></path>
+          <rect class="zone" data-part="wrist" data-side="right" x="12" y="164" width="14" height="8" rx="4"><title>右手腕</title></rect>
+          <rect class="zone" data-part="wrist" data-side="left" x="114" y="164" width="14" height="8" rx="4"><title>左手腕</title></rect>
+          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="181" rx="10" ry="12"><title>右手</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="181" rx="10" ry="12"><title>左手</title></ellipse>
+          <path class="zone" data-part="thigh" data-side="right" d="M55 167 L68 167 L65 213 L48 213 Z"><title>右大腿</title></path>
+          <path class="zone" data-part="thigh" data-side="left" d="M72 167 L85 167 L92 213 L75 213 Z"><title>左大腿</title></path>
+          <circle class="zone" data-part="knee" data-side="right" cx="57" cy="218" r="8"><title>右膝</title></circle>
+          <circle class="zone" data-part="knee" data-side="left" cx="83" cy="218" r="8"><title>左膝</title></circle>
+          <path class="zone" data-part="lower_leg" data-side="right" d="M49 227 L65 227 L62 247 L48 247 Z"><title>右小腿</title></path>
+          <path class="zone" data-part="lower_leg" data-side="left" d="M75 227 L91 227 L92 247 L78 247 Z"><title>左小腿</title></path>
+          <rect class="zone" data-part="ankle" data-side="right" x="47" y="248" width="15" height="6" rx="3"><title>右踝</title></rect>
+          <rect class="zone" data-part="ankle" data-side="left" x="78" y="248" width="15" height="6" rx="3"><title>左踝</title></rect>
+          <path class="zone" data-part="foot" data-side="right" d="M45 254 L63 254 L65 260 L42 260 Z"><title>右足</title></path>
+          <path class="zone" data-part="foot" data-side="left" d="M77 254 L95 254 L98 260 L75 260 Z"><title>左足</title></path>
+        </svg>
+      </div>
+      <div class="figure-pane">
+        <div class="figure-title">後面</div>
+        <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體後面">
+          <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
+          <circle class="zone" data-part="head" data-side="" cx="70" cy="28" r="16"><title>頭部</title></circle>
+          <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>後頸</title></rect>
+          <path class="zone" data-part="back" data-side="" d="M47 58 L93 58 L99 126 L41 126 Z"><title>背部</title></path>
+          <path class="zone" data-part="hip" data-side="" d="M45 127 L95 127 L88 166 L52 166 Z"><title>臀髖部</title></path>
+          <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
+          <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
+          <path class="zone" data-part="upper_arm" data-side="right" d="M29 68 L19 109 L31 112 L39 81 Z"><title>右上臂</title></path>
+          <path class="zone" data-part="upper_arm" data-side="left" d="M111 68 L121 109 L109 112 L101 81 Z"><title>左上臂</title></path>
+          <circle class="zone" data-part="elbow" data-side="right" cx="24" cy="117" r="8"><title>右肘</title></circle>
+          <circle class="zone" data-part="elbow" data-side="left" cx="116" cy="117" r="8"><title>左肘</title></circle>
+          <path class="zone" data-part="forearm" data-side="right" d="M20 124 L14 161 L26 163 L31 124 Z"><title>右前臂</title></path>
+          <path class="zone" data-part="forearm" data-side="left" d="M120 124 L126 161 L114 163 L109 124 Z"><title>左前臂</title></path>
+          <rect class="zone" data-part="wrist" data-side="right" x="12" y="164" width="14" height="8" rx="4"><title>右手腕</title></rect>
+          <rect class="zone" data-part="wrist" data-side="left" x="114" y="164" width="14" height="8" rx="4"><title>左手腕</title></rect>
+          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="181" rx="10" ry="12"><title>右手</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="181" rx="10" ry="12"><title>左手</title></ellipse>
+          <path class="zone" data-part="thigh" data-side="right" d="M55 167 L68 167 L65 213 L48 213 Z"><title>右大腿</title></path>
+          <path class="zone" data-part="thigh" data-side="left" d="M72 167 L85 167 L92 213 L75 213 Z"><title>左大腿</title></path>
+          <circle class="zone" data-part="knee" data-side="right" cx="57" cy="218" r="8"><title>右膝</title></circle>
+          <circle class="zone" data-part="knee" data-side="left" cx="83" cy="218" r="8"><title>左膝</title></circle>
+          <path class="zone" data-part="lower_leg" data-side="right" d="M49 227 L65 227 L62 247 L48 247 Z"><title>右小腿</title></path>
+          <path class="zone" data-part="lower_leg" data-side="left" d="M75 227 L91 227 L92 247 L78 247 Z"><title>左小腿</title></path>
+          <rect class="zone" data-part="ankle" data-side="right" x="47" y="248" width="15" height="6" rx="3"><title>右踝</title></rect>
+          <rect class="zone" data-part="ankle" data-side="left" x="78" y="248" width="15" height="6" rx="3"><title>左踝</title></rect>
+          <path class="zone" data-part="foot" data-side="right" d="M45 254 L63 254 L65 260 L42 260 Z"><title>右足</title></path>
+          <path class="zone" data-part="foot" data-side="left" d="M77 254 L95 254 L98 260 L75 260 Z"><title>左足</title></path>
+        </svg>
+      </div>
+    </div>
+  </section>
+  <button class="trauma-open" id="openTrauma" type="button"><b>外傷小人圖</b>：點一下重新選部位</button>
+  <div class="refine hide" id="refinePanel">
+    <div class="refine-title" id="refineTitle"><b>小腿骨折細分</b></div>
+    <div class="seg" id="refineSeg"></div>
+  </div>
+  <div id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></div>
+</main>
 <div class="disclaimer">
   ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以院內正式系統及醫師專業判斷為準；本工具不蒐集任何輸入內容（純離線/前端運算），開發者不對因使用本工具所生之任何後果負責。
 </div>
@@ -147,6 +287,20 @@ function needMore(e){
   return "";
 }
 
+let theme = "light";
+try{ theme = localStorage.getItem("theme") || "light"; }catch(e){}
+function applyTheme(){
+  document.documentElement.dataset.theme = theme;
+  const btn=document.getElementById("themeBtn");
+  if(btn) btn.textContent = theme==="dark" ? "☾" : "☀";
+}
+applyTheme();
+document.getElementById("themeBtn").onclick=()=>{
+  theme = theme==="dark" ? "light" : "dark";
+  try{ localStorage.setItem("theme",theme); }catch(e){}
+  applyTheme();
+};
+
 let kmuMode = false;
 try{ kmuMode = localStorage.getItem("kmu")==="1"; }catch(e){}
 const kmuTog=document.getElementById("kmuTog");
@@ -158,9 +312,104 @@ document.getElementById("ver").textContent=DB.version+"｜共 "+DB.entries.lengt
 buildIndex();
 const qel=document.getElementById("q");
 let t;qel.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(()=>search(qel.value),60);});
-document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>{
+function setScope(s){
   document.querySelectorAll(".scope button").forEach(x=>x.classList.remove("on"));
-  b.classList.add("on");SCOPE=b.dataset.s;search(qel.value);
+  const btn=document.querySelector(`.scope button[data-s="${s}"]`);
+  if(btn) btn.classList.add("on");
+  SCOPE=s;
+  search(qel.value);
+}
+document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>setScope(b.dataset.s));
+
+const INJURY_LABEL={laceration:"撕裂傷",contusion:"挫傷",fracture:"骨折",sprain:"扭傷",abrasion:"擦傷",burn:"燒燙傷"};
+const SIDE_LABEL={auto:"自動側別",none:"未指定側別",left:"左側",right:"右側",bilateral:"雙側"};
+const PART_QUERY={
+  head:"head",face:"face",neck:"neck",chest:"chest",abdomen:"abdomen",back:"back",hip:"hip",
+  shoulder:"shoulder",upper_arm:"upper arm",elbow:"elbow",forearm:"forearm",wrist:"wrist",hand:"hand",
+  thigh:"thigh",knee:"knee",lower_leg:"lower leg",ankle:"ankle",foot:"foot"
+};
+const PART_LABEL={
+  head:"頭部",face:"臉部",neck:"頸部",chest:"胸部",abdomen:"腹部",back:"背部",hip:"髖臀部",
+  shoulder:"肩部",upper_arm:"上臂",elbow:"肘部",forearm:"前臂",wrist:"手腕",hand:"手部",
+  thigh:"大腿",knee:"膝部",lower_leg:"小腿",ankle:"踝部",foot:"足部"
+};
+let traumaInjury="laceration", traumaSideMode="auto";
+const traumaPanel=document.querySelector(".trauma");
+const openTraumaBtn=document.getElementById("openTrauma");
+const refinePanel=document.getElementById("refinePanel");
+const refineTitle=document.getElementById("refineTitle");
+const refineSeg=document.getElementById("refineSeg");
+let activeRefine=null;
+function setTraumaVisible(show){
+  traumaPanel.classList.toggle("hide",!show);
+  openTraumaBtn.classList.toggle("show",!show);
+}
+function hideRefine(){
+  activeRefine=null;
+  refinePanel.classList.add("hide");
+  refineSeg.innerHTML="";
+}
+function applyQuery(query){
+  qel.value=query;
+  setScope("inj");
+}
+function showLowerLegFractureRefine(side){
+  activeRefine={side};
+  const sideText=side ? SIDE_LABEL[side] : "未指定側別";
+  refineTitle.innerHTML=`<b>小腿骨折細分</b> · ${sideText}`;
+  const opts=[
+    ["lower leg","小腿未細分"],
+    ["tibia","脛骨 tibia"],
+    ["fibula","腓骨 fibula"],
+    ["tibia fibula","脛腓骨"],
+  ];
+  refineSeg.innerHTML=opts.map(([term,label],i)=>`<button type="button" class="${i===0?'on':''}" data-term="${term}">${label}</button>`).join("");
+  refinePanel.classList.remove("hide");
+  refineSeg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    refineSeg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    applyQuery(["fracture",side,b.dataset.term].filter(Boolean).join(" "));
+  });
+}
+function updateTraumaState(extra){
+  const state=document.getElementById("traumaState");
+  state.textContent = extra || `${INJURY_LABEL[traumaInjury]} · ${SIDE_LABEL[traumaSideMode]}`;
+}
+function chooseSeg(container,attr,value){
+  document.querySelectorAll(`#${container} button`).forEach(b=>b.classList.toggle("on",b.dataset[attr]===value));
+}
+document.querySelectorAll("#injurySeg button").forEach(b=>b.onclick=()=>{
+  traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury); updateTraumaState();
+});
+document.querySelectorAll("#sideSeg button").forEach(b=>b.onclick=()=>{
+  traumaSideMode=b.dataset.sideMode; chooseSeg("sideSeg","sideMode",traumaSideMode); updateTraumaState();
+});
+document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
+  document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
+  z.classList.add("on");
+  const part=z.dataset.part;
+  const autoSide=z.dataset.side || "";
+  const side = traumaSideMode==="auto" ? autoSide : traumaSideMode==="none" ? "" : traumaSideMode;
+  const query=[traumaInjury,side,PART_QUERY[part]].filter(Boolean).join(" ");
+  applyQuery(query);
+  updateTraumaState(`${INJURY_LABEL[traumaInjury]} · ${side ? SIDE_LABEL[side] : "未指定側別"} · ${PART_LABEL[part]}`);
+  setTraumaVisible(false);
+  hideRefine();
+  if(traumaInjury==="fracture" && part==="lower_leg") showLowerLegFractureRefine(side);
+}));
+document.getElementById("clearTrauma").onclick=()=>{
+  document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
+  qel.value="";
+  updateTraumaState();
+  setTraumaVisible(true);
+  hideRefine();
+  search("");
+};
+openTraumaBtn.onclick=()=>setTraumaVisible(true);
+qel.addEventListener("input",()=>{
+  if(qel.value.trim()) setTraumaVisible(false);
+  else setTraumaVisible(true);
+  hideRefine();
 });
 qel.focus();
 </script>
