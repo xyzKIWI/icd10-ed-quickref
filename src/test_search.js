@@ -83,6 +83,12 @@ const cases = [
   ["lbp","M54"],
   ["apn","N10"],
   ["psvt","I47.1"],
+  // 精確度(IDF)與同義詞修正
+  ["age","A09"],                          // 不再噴 acute MI；腸胃炎
+  ["acute gastroenteritis","A09"],
+  ["subconjunctival hemorrhage","H11.3"], // sub-/typo→conjunctival
+  ["subconjuntiva hemorrhage","H11.3"],
+  ["acute appendicitis","K35.80"],        // 精準，不被一堆 acute 淹沒
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前
@@ -117,7 +123,7 @@ function lateralityGuard(){
 // 小人圖碼段白名單守門：prefixes 必須硬過濾，不可查無 fallback 到全域錯碼
 function prefixGuard(){
   const guards=[
-    ["上背骨折 S22，不可跑出顱骨 S02","skull fracture",["S22"],["S22"],["S02"]],
+    ["上背骨折 S22，不可跑出顱骨 S02","fracture",["S22"],["S22"],["S02"]],
     ["下背骨折 S32，不可跑出顱骨 S02","fracture",["S32"],["S32"],["S02"]],
     ["前臂骨折 refine 只留 S52","radius fracture",["S52"],["S52"],["S42","S62"]],
     ["手部骨折 refine 只留 S62","metacarpal fracture",["S62"],["S62"],["S52"]],

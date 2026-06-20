@@ -17,6 +17,10 @@ const SYN = {
   "stone":"calculus","stones":"calculus","calculi":"calculus",   // 結石：官方用 calculus
   "renal":"kidney","ureteral":"ureter","urethral":"urethra",
   "dizzy":"dizziness","epigastralgia":"epigastric pain","fb":"foreign body",   // 真實病歷常見措辭
+  "sting":"venom","stung":"venom",   // 叮咬：官方碼名用 venom（蜂螫 bee sting→venom of bees）
+  // 結膜出血：官方碼名用 conjunctival，sub- 前綴與少 c 的 typo 都導過去
+  "subconjunctival":"conjunctival","subconjunctiva":"conjunctival","conjunctiva":"conjunctival",
+  "conjuntiva":"conjunctival","subconjuntiva":"conjunctival","subconjunctival":"conjunctival",
 };
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
@@ -45,7 +49,7 @@ const ABBR = {
   "ckd":"chronic kidney","aki":"acute kidney failure","esrd":"end stage renal","arf":"acute kidney failure",
   "bph":"benign prostatic hyperplasia","pid":"pelvic inflammatory","cp":"chest pain","abd":"abdominal",
   // 由真實 KMUH 急診病歷高頻縮寫補入
-  "age":"acute gastroenteritis","pn":"pneumonia","ugi":"upper gastrointestinal",
+  "age":"gastroenteritis","pn":"pneumonia","ugi":"upper gastrointestinal",
   "aur":"retention urine","apn":"acute pyelonephritis","lbp":"low back pain",
   "ohca":"cardiac arrest","psvt":"supraventricular tachycardia","vt":"ventricular tachycardia",
   "hcc":"liver cell carcinoma","mdd":"major depressive","urosepsis":"urosepsis",
@@ -108,6 +112,20 @@ const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve"
                    "flexor","extensor","abductor","adductor","intrinsic"];
 function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
 
+// IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
+// → 只命中常用字的碼會被過濾，大幅提升精確度。DF 只建一次。
+let _DF=null, _DFN=0;
+function ensureDF(IDX){
+  if(_DF) return;
+  _DF=new Map(); _DFN=IDX.length;
+  for(const item of IDX){
+    const uniq=new Set(item.toks);
+    for(const t of uniq) _DF.set(t,(_DF.get(t)||0)+1);
+  }
+}
+// 上限 5.5：避免單一罕見字/typo 壟斷總權重，害「未命中該字」整筆被濾掉
+function idf(tok){ return Math.min(5.5, Math.log(1 + _DFN/((_DF.get(tok)||0)+1))); }
+
 function indexEntry(e,kind){
   const toks = e.en.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t&&!STOP.has(t));
   // 官方字母索引別名（同義詞/俗稱/eponym）：另存，比對時給較低分，避免上層解剖詞污染
@@ -119,18 +137,21 @@ function indexEntry(e,kind){
   }
   return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh};
 }
-function scoreEntry(item,qtoks,cjk,qHasSide){
-  let score=0, matched=0;
+function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW){
+  let acc=0, anyMatch=false, polarityPen=0;   // acc = Σ best·idf（命中的資訊量）
   const hay=item.hay;
-  for(const qt of qtoks){
+  for(let k=0;k<qtoks.length;k++){
+    const qt=qtoks[k], w=qIdf[k];
     let best=0;
     if(qt.charCodeAt(0)<0x4e00){            // 英數 token：先用 indexOf 快篩
       if(hay.includes(" "+qt+" ")) best=1.0;                       // 整字命中
       else if(qt.length>=3 && hay.includes(" "+qt)) best=0.85;     // 字首命中
       else if(qt.length>=4){                                       // 模糊：閘門限制呼叫次數
         for(const t of item.toks){
-          if(t[0]!==qt[0] || Math.abs(t.length-qt.length)>1) continue;
-          if(levLE(qt,t,1)<=1){best=0.7;break;}
+          if(t[0]!==qt[0]) continue;
+          const dl=Math.abs(t.length-qt.length);
+          if(dl<=1 && levLE(qt,t,1)<=1){best=0.7;break;}
+          if(qt.length>=7 && dl<=2){ const d=levLE(qt,t,2); if(d<=2){best=(d<=1?0.7:0.55);break;} }  // 長字容許距離2(對調/雙字)
         }
       }
       // 只靠官方索引別名命中：給較低分（正式碼名主導），仍保留召回
@@ -138,33 +159,28 @@ function scoreEntry(item,qtoks,cjk,qHasSide){
         if(item.axhay.includes(" "+qt+" ")) best=0.5;
         else if(qt.length>=3 && item.axhay.includes(" "+qt)) best=0.42;
       }
-      // 極性相反懲罰：查 traumatic 卻只有 nontraumatic（或反向），是相反診斷，往下壓
+      // 極性相反懲罰：查 traumatic 卻只有 nontraumatic（或反向）→ 扣掉該詞的權重(資訊量)
       if(best===0 && qt.length>=5){
-        if(!qt.startsWith("non") && hay.includes(" non"+qt+" ")) score-=0.9;
-        else if(qt.startsWith("non") && hay.includes(" "+qt.slice(3)+" ") && !hay.includes(" "+qt+" ")) score-=0.9;
+        if(!qt.startsWith("non") && hay.includes(" non"+qt+" ")) polarityPen+=w;
+        else if(qt.startsWith("non") && hay.includes(" "+qt.slice(3)+" ") && !hay.includes(" "+qt+" ")) polarityPen+=w;
       }
     }else if(cjk){                          // 中文 token：子字串/字數比例
       if(item.zh.includes(qt)) best=1.0;
       else{ let c=0; for(const ch of qt) if(item.zh.includes(ch)) c++; if(c>0) best=0.9*(c/qt.length); }
     }
-    if(best>0){score+=best;matched++;}
+    if(best>0){ acc+=best*w; anyMatch=true; }
   }
-  if(matched===0) return 0;
-  const cov = matched/qtoks.length;
-  if(cov<0.5) return 0;
-  // 專一構造詞懲罰：碼名提到 tendon/muscle/artery/nerve… 但使用者沒打 → 往下壓
-  // （讓單純「laceration」優先開放性傷口碼，而非肌腱/血管/神經的專一傷）
+  if(!anyMatch) return 0;
+  // 加權覆蓋率 ∈ [0,1]：命中的「資訊量」佔查詢總資訊量比例。只命中常用字→低→被濾掉
+  let cov=(acc - polarityPen)/totalW;
+  if(cov<0.45) return 0;
+  // 懲罰(0..1 尺度)：專一構造詞、generic metacarpal、未查左右
   let pen=0;
-  for(const w of SPECIFIER){ if(item.hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.4; if(pen>=1.2)break; } }
-  // Generic "metacarpal fracture" in ED use usually means 2nd-5th metacarpal;
-  // keep first metacarpal/thumb codes for explicit first/thumb queries.
+  for(const w of SPECIFIER){ if(hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.12; if(pen>=0.36)break; } }
   if(qhas(qtoks,"metacarpal")&&!qhas(qtoks,"first")&&!qhas(qtoks,"1st")&&!qhas(qtoks,"thumb")&&
-     hay.includes(" first metacarpal ")){
-    pen+=0.35;
-  }
-  // 沒查左右時，帶 left/right 的碼往下壓，讓「未明示側性」優先（急診常不特別 code 左右）
-  if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.3;
-  return score*cov - pen;
+     hay.includes(" first metacarpal ")) pen+=0.12;
+  if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.1;
+  return cov - pen;
 }
 function buildCode(stem,ch){
   if(!ch) return stem;
@@ -219,16 +235,19 @@ function searchCore(IDX,q,scope,prefixes){
   const pf = (prefixes && prefixes.length) ? prefixes : null;
   if(!q.trim() && !pf) return [];
   if(!pf && isCodeQuery(q)) return codeSearch(IDX,q,scope);
+  ensureDF(IDX);
   const qtoks=norm(q), cjk=hasCJK(q);
   const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
   const hasText = !!q.trim();
+  const qIdf = qtoks.map(idf);
+  let totalW=0; for(const w of qIdf) totalW+=w; if(totalW<=0) totalW=1;
   const res=[];
   for(const item of IDX){
     if(scope!=="all"&&item.kind!==scope)continue;
     if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
     let sc;
     if(hasText){
-      sc=scoreEntry(item,qtoks,cjk,qHasSide);
+      sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW);
       if(sc>0 && item.e.b) sc*=1.4;       // 急診常見診斷加權
     }else{
       sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
