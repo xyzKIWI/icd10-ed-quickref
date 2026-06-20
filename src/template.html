@@ -417,6 +417,57 @@ const refinePanel=document.getElementById("refinePanel");
 const refineTitle=document.getElementById("refineTitle");
 const refineSeg=document.getElementById("refineSeg");
 let activeRefine=null;
+const FRACTURE_REFINES={
+  lower_leg:{
+    title:"小腿骨折細分",
+    opts:[
+      ["lower leg","小腿未細分"],
+      ["tibia","脛骨 tibia"],
+      ["fibula","腓骨 fibula"],
+      ["tibia fibula","脛腓骨"],
+    ],
+  },
+  forearm:{
+    title:"前臂骨折細分",
+    opts:[
+      ["forearm","前臂未細分"],
+      ["radius","橈骨 radius"],
+      ["ulna","尺骨 ulna"],
+      ["both bone forearm","雙骨 both bone"],
+    ],
+  },
+  elbow:{
+    title:"肘部骨折細分",
+    opts:[
+      ["elbow","肘部未細分"],
+      ["olecranon","鷹嘴突 olecranon"],
+      ["radial head","橈骨頭 radial head"],
+      ["radial neck","橈骨頸 radial neck"],
+      ["distal humerus","肱骨遠端 distal humerus"],
+    ],
+  },
+  hand:{
+    title:"手部骨折細分",
+    opts:[
+      ["hand","手部未細分"],
+      ["metacarpal","掌骨 metacarpal"],
+      ["thumb phalanx","拇指 phalanx"],
+      ["index finger phalanx","食指 phalanx"],
+      ["middle finger phalanx","中指 phalanx"],
+      ["ring finger phalanx","無名指 phalanx"],
+      ["little finger phalanx","小指 phalanx"],
+    ],
+  },
+  foot:{
+    title:"足部骨折細分",
+    opts:[
+      ["foot","足部未細分"],
+      ["metatarsal","蹠骨 metatarsal"],
+      ["great toe","大腳趾 great toe"],
+      ["lesser toe","其他腳趾 lesser toe"],
+    ],
+  },
+};
 function setTraumaVisible(show){
   traumaPanel.classList.toggle("hide",!show);
   openTraumaBtn.classList.toggle("show",!show);
@@ -430,17 +481,13 @@ function applyQuery(query){
   qel.value=query;
   setScope("inj");
 }
-function showLowerLegFractureRefine(side){
-  activeRefine={side};
+function showFractureRefine(part,side){
+  const cfg=FRACTURE_REFINES[part];
+  if(!cfg) return;
+  activeRefine={part,side};
   const sideText=side ? SIDE_LABEL[side] : "未指定側別";
-  refineTitle.innerHTML=`<b>小腿骨折細分</b> · ${sideText}`;
-  const opts=[
-    ["lower leg","小腿未細分"],
-    ["tibia","脛骨 tibia"],
-    ["fibula","腓骨 fibula"],
-    ["tibia fibula","脛腓骨"],
-  ];
-  refineSeg.innerHTML=opts.map(([term,label],i)=>`<button type="button" class="${i===0?'on':''}" data-term="${term}">${label}</button>`).join("");
+  refineTitle.innerHTML=`<b>${cfg.title}</b> · ${sideText}`;
+  refineSeg.innerHTML=cfg.opts.map(([term,label],i)=>`<button type="button" class="${i===0?'on':''}" data-term="${term}">${label}</button>`).join("");
   refinePanel.classList.remove("hide");
   refineSeg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
     refineSeg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
@@ -472,7 +519,7 @@ document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
   updateTraumaState(`${INJURY_LABEL[traumaInjury]} · ${side ? SIDE_LABEL[side] : "未指定側別"} · ${PART_LABEL[part]}`);
   setTraumaVisible(false);
   hideRefine();
-  if(traumaInjury==="fracture" && part==="lower_leg") showLowerLegFractureRefine(side);
+  if(traumaInjury==="fracture" && FRACTURE_REFINES[part]) showFractureRefine(part,side);
 }));
 document.getElementById("clearTrauma").onclick=()=>{
   document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));

@@ -56,6 +56,22 @@ const cases = [
   ["toe laceration","S91.1"],
   ["fracture left tibia","S82"],
   ["fracture left fibula","S82"],
+  ["radius fracture","S52"],
+  ["ulna fracture","S52"],
+  ["both bone forearm fracture","S52"],
+  ["olecranon fracture","S52.0"],
+  ["radial head fracture","S52.12"],
+  ["radial neck fracture","S52.13"],
+  ["distal humerus fracture","S42.4"],
+  ["metacarpal fracture","S62.3"],
+  ["thumb phalanx fracture","S62.5"],
+  ["index finger phalanx fracture","S62.6"],
+  ["middle finger phalanx fracture","S62.6"],
+  ["ring finger phalanx fracture","S62.6"],
+  ["little finger phalanx fracture","S62.6"],
+  ["metatarsal fracture","S92.3"],
+  ["great toe fracture","S92.4"],
+  ["lesser toe fracture","S92.5"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

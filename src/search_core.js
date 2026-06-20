@@ -59,6 +59,22 @@ function norm(q){
     const LESSER=new Set(["little","middle","ring","index","second","third","fourth","fifth","2nd","3rd","4th","5th","small","pinky","lesser"]);
     out=out.map(w=>GREAT.has(w)?"great":LESSER.has(w)?"lesser":w);
   }
+  // 臨床口語 → ICD 官方碼名：radial neck/head 寫作 neck/head of radius；
+  // distal humerus 寫作 lower end of humerus；both bone forearm 沒有獨立外傷碼，回到 forearm。
+  if(out.includes("radial")&&(out.includes("head")||out.includes("neck"))){
+    out=out.map(w=>w==="radial"?"radius":w);
+  }
+  if(out.includes("distal")&&out.includes("humerus")){
+    const expanded=[];
+    for(const w of out){
+      if(w==="distal") expanded.push("lower","end");
+      else expanded.push(w);
+    }
+    out=expanded;
+  }
+  if(out.includes("forearm")&&out.includes("both")&&(out.includes("bone")||out.includes("bones"))){
+    out=out.filter(w=>w!=="both"&&w!=="bone"&&w!=="bones");
+  }
   return out;
 }
 // 有界編輯距離：超過 max 立即回 max+1（給 max=1 用，快）
@@ -130,6 +146,12 @@ function scoreEntry(item,qtoks,cjk,qHasSide){
   // （讓單純「laceration」優先開放性傷口碼，而非肌腱/血管/神經的專一傷）
   let pen=0;
   for(const w of SPECIFIER){ if(item.hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.4; if(pen>=1.2)break; } }
+  // Generic "metacarpal fracture" in ED use usually means 2nd-5th metacarpal;
+  // keep first metacarpal/thumb codes for explicit first/thumb queries.
+  if(qhas(qtoks,"metacarpal")&&!qhas(qtoks,"first")&&!qhas(qtoks,"1st")&&!qhas(qtoks,"thumb")&&
+     hay.includes(" first metacarpal ")){
+    pen+=0.35;
+  }
   // 沒查左右時，帶 left/right 的碼往下壓，讓「未明示側性」優先（急診常不特別 code 左右）
   if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.3;
   return score*cov - pen;
