@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>急診 ICD-10 外傷速查</title>
+<style>
+  :root{ --bg:#0f1720; --card:#172230; --line:#26344a; --txt:#e7eef7; --sub:#8aa0b8;
+         --accent:#4ea1ff; --code:#ffd479; --hit:#7fe0a0; --warn:#ffb86b; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+       background:var(--bg);color:var(--txt);-webkit-text-size-adjust:100%}
+  header{position:sticky;top:0;background:linear-gradient(#0f1720,#0f1720ee);
+         padding:14px 14px 10px;border-bottom:1px solid var(--line);z-index:5}
+  h1{font-size:16px;margin:0 0 8px;color:var(--sub);font-weight:600;letter-spacing:.3px}
+  h1 small{color:#5d7088;font-weight:400}
+  #q{width:100%;font-size:19px;padding:13px 14px;border-radius:12px;border:1px solid var(--line);
+     background:#0b1119;color:var(--txt);outline:none}
+  #q:focus{border-color:var(--accent)}
+  .hint{color:var(--sub);font-size:12px;margin:7px 2px 0;line-height:1.5}
+  .scope{display:flex;gap:6px;margin-top:9px}
+  .scope button{flex:1;padding:7px;border-radius:9px;border:1px solid var(--line);
+       background:#0b1119;color:var(--sub);font-size:13px;cursor:pointer}
+  .scope button.on{background:var(--accent);color:#04121f;border-color:var(--accent);font-weight:700}
+  main{padding:10px 12px 60px;max-width:760px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;
+        padding:12px 13px;margin-bottom:10px;cursor:pointer;transition:border-color .1s,background .1s}
+  .card:hover{border-color:var(--accent)}
+  .card:active{background:#1d2b3d}
+  .cphint{font-size:10px;color:#46566b;margin-left:auto}
+  .kmu{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;color:var(--sub);cursor:pointer;user-select:none}
+  .kmu input{width:16px;height:16px;accent-color:var(--accent)}
+  .kmu b{color:var(--warn)}
+  .row1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:21px;font-weight:700;color:var(--code);
+        letter-spacing:.5px;cursor:pointer}
+  .code:active{opacity:.6}
+  .copyok{color:var(--hit);font-size:12px;margin-left:4px}
+  .en{font-size:15px;margin-top:5px}
+  .zh{font-size:16px;color:#cfe0f2;margin-top:2px}
+  .why{font-size:11.5px;color:var(--sub);margin-top:6px}
+  .why b{color:var(--hit);font-weight:600}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .chip{font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);
+        background:#0b1119;color:var(--sub);cursor:pointer;font-family:ui-monospace,monospace}
+  .chip.on{background:#1e3a2b;border-color:var(--hit);color:var(--hit);font-weight:700}
+  .miss{color:var(--warn);font-size:12px;margin-top:7px;line-height:1.45}
+  .empty{color:var(--sub);text-align:center;margin-top:40px;font-size:14px;line-height:1.7}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;
+       background:#23344a;color:var(--sub);vertical-align:middle;margin-left:6px}
+  .tag.tr{background:#3a2330;color:#ff9bbf}
+  footer{color:#46566b;font-size:11px;text-align:center;padding:14px}
+  .disclaimer{max-width:760px;margin:18px auto 0;padding:12px 14px;font-size:11.5px;line-height:1.7;
+        color:#8aa0b8;background:#141d29;border:1px solid var(--line);border-radius:10px}
+  .disclaimer b{color:var(--warn)}
+</style>
+</head>
+<body>
+<header>
+  <h1>急診 ICD-10 速查 <small id="meta"></small></h1>
+  <input id="q" autocomplete="off" autocapitalize="off" spellcheck="false"
+         placeholder="例：contusion left forearm、左前臂挫傷、lt radial fx、頭部撕裂傷">
+  <div class="scope">
+    <button data-s="all" class="on">全部</button>
+    <button data-s="inj">外傷 S·T</button>
+    <button data-s="ext">外因 V·Y</button>
+    <button data-s="dx">一般診斷</button>
+  </div>
+  <div class="hint">支援英文/中文、縮寫(fx, lac, lt/rt)、拼錯字也能命中。點整個框框即複製代碼。</div>
+  <label class="kmu"><input type="checkbox" id="kmuTog"> <span><b>高醫模式</b>：複製時去掉小數點</span></label>
+</header>
+<main id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></main>
+<div class="disclaimer">
+  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以院內正式系統及醫師專業判斷為準；本工具不蒐集任何輸入內容（純離線/前端運算），開發者不對因使用本工具所生之任何後果負責。
+</div>
+<footer id="ver"></footer>
+
+<script>
+const DB = /*DATA*/;
+const SEVENTH = DB.seventh;
+/*CORE*/
+function variantZh(e,ch){ return ch ? e.zh+"（"+(SEVENTH[ch]||ch)+"）" : e.zh; }
+
+let IDX=[];
+function buildIndex(){
+  IDX = DB.entries.map(e=>indexEntry(e,e.k));
+}
+
+let SCOPE="all";
+function search(q){
+  const out=document.getElementById("out");
+  if(!q.trim()){out.innerHTML='<div class="empty">輸入診斷關鍵字開始查詢</div>';return;}
+  const qtoks=norm(q);
+  const res=searchCore(IDX,q,SCOPE);
+  if(!res.length){out.innerHTML='<div class="empty">查無結果<br>試試更簡短的關鍵字，或改用英文/中文</div>';return;}
+  out.innerHTML=res.map(([sc,item],i)=>card(item,qtoks,i)).join("");
+}
+
+function card(item,qtoks,i){
+  const e=item.e;
+  const chars = e.s7 ? e.s7.split("") : [""];
+  const def = chars.includes("A")?"A":chars[0];
+  const tag = item.kind==="inj"?'<span class="tag tr">外傷</span>':item.kind==="ext"?'<span class="tag tr">外因</span>':'<span class="tag">診斷</span>';
+  const why = whyHit(item,qtoks);
+  let chips="";
+  if(e.s7 && e.s7.length){
+    chips='<div class="chips">'+chars.map(ch=>
+      `<span class="chip${ch===def?' on':''}" onclick="event.stopPropagation();pick(${i},'${ch}')">${ch} ${SEVENTH[ch]||''}</span>`
+    ).join("")+'</div>';
+  }
+  const miss = needMore(e) ? `<div class="miss">⚠ ${needMore(e)}</div>` : "";
+  return `<div class="card" id="c${i}" data-stem="${e.c}" onclick="cardCopy(${i})">
+    <div class="row1"><span class="code" id="code${i}" data-code="${buildCode(e.c,def)}">${buildCode(e.c,def)}</span>${tag}<span class="cphint">點框複製</span></div>
+    <div class="en">${e.en}</div>
+    <div class="zh" id="zh${i}">${variantZh(e,def)}</div>
+    ${why?`<div class="why">命中：<b>${why}</b></div>`:""}
+    ${chips}${miss}
+  </div>`;
+}
+function pick(i,ch){
+  const card=document.getElementById("c"+i); const stem=card.dataset.stem;
+  const e=IDX.find(x=>x.e.c===stem&&x.kind)?.e || {c:stem,zh:""};
+  const code=buildCode(stem,ch);
+  const el=document.getElementById("code"+i);
+  el.textContent=code; el.dataset.code=code;
+  document.getElementById("zh"+i).textContent=variantZh(e,ch);
+  card.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.textContent.trim().startsWith(ch+" ")||c.textContent.trim()===ch));
+}
+function fmtCode(c){ return kmuMode ? c.replace(/\./g,"") : c; }   // 高醫模式去小數點
+function cardCopy(i){
+  const el=document.getElementById("code"+i);
+  const out=fmtCode(el.dataset.code);
+  navigator.clipboard?.writeText(out);
+  const row=el.parentNode;
+  let ok=row.querySelector(".copyok");
+  if(!ok){ok=document.createElement("span");ok.className="copyok";row.querySelector(".cphint").style.display="none";row.appendChild(ok);}
+  ok.textContent="✓ 已複製 "+out;
+  clearTimeout(ok._t); ok._t=setTimeout(()=>{ok.remove();const h=row.querySelector(".cphint");if(h)h.style.display="";},1300);
+}
+// 缺漏欄位提示（規則：骨折/開放傷未指明側別或部位時提醒）
+function needMore(e){
+  const en=e.en.toLowerCase();
+  if(en.includes("unspecified")){
+    if(en.includes("fracture")) return "未指明部位/側別，建議補：哪一段、左右、位移、開放或閉鎖";
+    return "此為「未明示」碼，若臨床已知側別/部位建議改用更精確碼";
+  }
+  return "";
+}
+
+let kmuMode = false;
+try{ kmuMode = localStorage.getItem("kmu")==="1"; }catch(e){}
+const kmuTog=document.getElementById("kmuTog");
+kmuTog.checked=kmuMode;
+kmuTog.onchange=()=>{ kmuMode=kmuTog.checked; try{localStorage.setItem("kmu",kmuMode?"1":"0");}catch(e){} };
+
+document.getElementById("meta").textContent=DB.version.split("(")[0];
+document.getElementById("ver").textContent=DB.version+"｜共 "+DB.entries.length+" 診斷條目（全章節）｜離線單檔";
+buildIndex();
+const qel=document.getElementById("q");
+let t;qel.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(()=>search(qel.value),60);});
+document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".scope button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");SCOPE=b.dataset.s;search(qel.value);
+});
+qel.focus();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# 大型原始資料（重建用，不進 repo；下載方式見 README）
+data/
+build/
+dist/
+*.xlsx
+*.zip
+*.corrupted_bak
+
+# 本機 agent/記憶檔，不公開
+AGENTS.md
+CLAUDE.md
+.claude/
