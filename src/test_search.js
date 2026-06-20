@@ -114,6 +114,25 @@ function lateralityGuard(){
   return ok;
 }
 
+// 小人圖碼段白名單守門：prefixes 必須硬過濾，不可查無 fallback 到全域錯碼
+function prefixGuard(){
+  const guards=[
+    ["上背骨折 S22，不可跑出顱骨 S02","skull fracture",["S22"],["S22"],["S02"]],
+    ["下背骨折 S32，不可跑出顱骨 S02","fracture",["S32"],["S32"],["S02"]],
+    ["前臂骨折 refine 只留 S52","radius fracture",["S52"],["S52"],["S42","S62"]],
+    ["手部骨折 refine 只留 S62","metacarpal fracture",["S62"],["S62"],["S52"]],
+    ["前/後軀幹燒傷只留 T21","burn chest abdomen",["T21"],["T21"],["T20","T22","T23","T24","T25"]],
+  ];
+  let okAll=true;
+  for(const [label,q,prefixes,want,deny] of guards){
+    const codes=C.searchCore(IDX,q,"all",prefixes).slice(0,10).map(x=>x[1].e.c);
+    const ok=codes.length>0 && codes.every(c=>want.some(p=>c.startsWith(p))) && !codes.some(c=>deny.some(p=>c.startsWith(p)));
+    console.log((ok?"✅":"❌")+" prefixes 守門："+label+" 前10名 = "+(codes.join(", ")||"(空)"));
+    if(!ok) okAll=false;
+  }
+  return okAll;
+}
+
 let pass=0;
 for(const [q,exp] of cases){
   const r = top(q,3);
@@ -132,5 +151,6 @@ const ms=(Date.now()-t0)/(N*qs.length);
 const guardOk = polarityGuard();
 const fingerOk = fingerGuard();
 const latOk = lateralityGuard();
+const prefixOk = prefixGuard();
 console.log(`=== ${pass}/${cases.length} 通過 ｜ 平均單次查詢 ${ms.toFixed(1)} ms（${IDX.length} 條目）===`);
-process.exit(pass===cases.length && guardOk && fingerOk && latOk?0:1);
+process.exit(pass===cases.length && guardOk && fingerOk && latOk && prefixOk?0:1);
