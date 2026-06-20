@@ -8,11 +8,13 @@
   :root{ color-scheme:light; --bg:#f4f7fb; --card:#ffffff; --panel:#eef3f8; --field:#ffffff;
          --line:#c9d5e3; --txt:#142033; --sub:#5d7088; --muted:#7d8fa3;
          --accent:#1769d1; --accent2:#0f7f6e; --code:#8a5200; --hit:#087a47; --warn:#a85b00;
-         --header:rgba(244,247,251,.94); --active:#dbeafe; --activeTxt:#0b3b78; --zone:#cbd8e6; --zoneOn:#1769d1; }
+         --header:rgba(244,247,251,.94); --active:#dbeafe; --activeTxt:#0b3b78; --zone:#cbd8e6; --zoneOn:#1769d1;
+         --body-line:#6f8298; --body-fill:rgba(255,255,255,.5); }
   :root[data-theme="dark"]{ color-scheme:dark; --bg:#0f1720; --card:#172230; --panel:#141d29; --field:#0b1119;
          --line:#26344a; --txt:#e7eef7; --sub:#8aa0b8; --muted:#5d7088;
          --accent:#4ea1ff; --accent2:#39c6a8; --code:#ffd479; --hit:#7fe0a0; --warn:#ffb86b;
-         --header:rgba(15,23,32,.94); --active:#193a5f; --activeTxt:#dceeff; --zone:#2b3d54; --zoneOn:#4ea1ff; }
+         --header:rgba(15,23,32,.94); --active:#193a5f; --activeTxt:#dceeff; --zone:#2b3d54; --zoneOn:#4ea1ff;
+         --body-line:#7f95ad; --body-fill:rgba(255,255,255,.04); }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
        background:var(--bg);color:var(--txt);-webkit-text-size-adjust:100%}
@@ -101,10 +103,12 @@
   .figure-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
   .figure-pane{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px;min-width:0}
   .figure-title{font-size:12px;color:var(--sub);text-align:center;margin-bottom:4px}
-  .body-svg{width:100%;height:auto;display:block;max-height:310px}
-  .body-line{fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round}
-  .zone{fill:var(--zone);stroke:var(--line);stroke-width:1.4;opacity:.92;cursor:pointer;transition:fill .12s,opacity .12s,stroke .12s}
-  .zone:hover,.zone.on{fill:var(--zoneOn);stroke:var(--accent);opacity:1}
+  .body-svg{width:100%;height:auto;display:block;max-height:310px;overflow:visible}
+  .body-line{fill:var(--body-fill);stroke:var(--body-line);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+  .body-detail{fill:none;stroke:var(--body-line);stroke-width:1.1;stroke-linecap:round;opacity:.42;pointer-events:none}
+  .zone{fill:var(--zone);stroke:var(--body-line);stroke-width:1;opacity:.28;cursor:pointer;
+        transition:fill .12s,opacity .12s,stroke .12s,stroke-width .12s;vector-effect:non-scaling-stroke}
+  .zone:hover,.zone.on{fill:var(--zoneOn);stroke:var(--accent);stroke-width:1.5;opacity:.72}
   .body-label{font-size:8px;fill:var(--muted)}
   footer{color:var(--muted);font-size:11px;text-align:center;padding:14px}
   .disclaimer{max-width:760px;margin:18px auto 0;padding:12px 14px;font-size:11.5px;line-height:1.7;
@@ -172,72 +176,76 @@
       <div class="figure-pane">
         <div class="figure-title">前面</div>
         <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體前面">
+          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 161 18 165 25 164 L36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C51 251 56 255 63 254 L69 177 L71 177 L77 254 C84 255 89 251 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 L115 164 C122 165 126 161 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
+          <path class="body-detail" d="M53 61 C61 66 79 66 87 61 M48 104 C57 109 83 109 92 104 M55 151 C63 154 77 154 85 151 M70 177 L70 250"></path>
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
-          <circle class="zone" data-part="face" data-side="" cx="70" cy="28" r="16"><title>臉部</title></circle>
-          <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>頸部</title></rect>
-          <path class="zone" data-part="chest_front" data-side="" d="M48 58 L92 58 L98 104 L42 104 Z"><title>前胸壁/乳房</title></path>
-          <path class="zone" data-part="abdomen_front" data-side="" d="M43 105 L97 105 L91 145 L49 145 Z"><title>前腹壁</title></path>
-          <path class="zone" data-part="hip" data-side="" d="M48 146 L92 146 L85 166 L55 166 Z"><title>髖部</title></path>
-          <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
-          <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
-          <path class="zone" data-part="upper_arm" data-side="right" d="M29 68 L19 109 L31 112 L39 81 Z"><title>右上臂</title></path>
-          <path class="zone" data-part="upper_arm" data-side="left" d="M111 68 L121 109 L109 112 L101 81 Z"><title>左上臂</title></path>
-          <circle class="zone" data-part="elbow" data-side="right" cx="24" cy="117" r="8"><title>右肘</title></circle>
-          <circle class="zone" data-part="elbow" data-side="left" cx="116" cy="117" r="8"><title>左肘</title></circle>
-          <path class="zone" data-part="forearm" data-side="right" d="M20 124 L14 161 L26 163 L31 124 Z"><title>右前臂</title></path>
-          <path class="zone" data-part="forearm" data-side="left" d="M120 124 L126 161 L114 163 L109 124 Z"><title>左前臂</title></path>
-          <rect class="zone" data-part="wrist" data-side="right" x="12" y="164" width="14" height="8" rx="4"><title>右手腕</title></rect>
-          <rect class="zone" data-part="wrist" data-side="left" x="114" y="164" width="14" height="8" rx="4"><title>左手腕</title></rect>
-          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="181" rx="10" ry="12"><title>右手</title></ellipse>
-          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="181" rx="10" ry="12"><title>左手</title></ellipse>
-          <path class="zone" data-part="thigh" data-side="right" d="M55 167 L68 167 L65 213 L48 213 Z"><title>右大腿</title></path>
-          <path class="zone" data-part="thigh" data-side="left" d="M72 167 L85 167 L92 213 L75 213 Z"><title>左大腿</title></path>
-          <circle class="zone" data-part="knee" data-side="right" cx="57" cy="218" r="8"><title>右膝</title></circle>
-          <circle class="zone" data-part="knee" data-side="left" cx="83" cy="218" r="8"><title>左膝</title></circle>
-          <path class="zone" data-part="lower_leg" data-side="right" d="M49 227 L65 227 L62 247 L48 247 Z"><title>右小腿</title></path>
-          <path class="zone" data-part="lower_leg" data-side="left" d="M75 227 L91 227 L92 247 L78 247 Z"><title>左小腿</title></path>
-          <rect class="zone" data-part="ankle" data-side="right" x="47" y="248" width="15" height="6" rx="3"><title>右踝</title></rect>
-          <rect class="zone" data-part="ankle" data-side="left" x="78" y="248" width="15" height="6" rx="3"><title>左踝</title></rect>
-          <path class="zone" data-part="foot" data-side="right" d="M45 254 L63 254 L65 260 L42 260 Z"><title>右足</title></path>
-          <path class="zone" data-part="foot" data-side="left" d="M77 254 L95 254 L98 260 L75 260 Z"><title>左足</title></path>
+          <ellipse class="zone" data-part="face" data-side="" cx="70" cy="30" rx="17" ry="20"><title>臉部</title></ellipse>
+          <path class="zone" data-part="neck" data-side="" d="M61 48 C64 54 76 54 79 48 L81 61 C76 65 64 65 59 61 Z"><title>頸部</title></path>
+          <path class="zone" data-part="chest_front" data-side="" d="M43 61 C52 56 88 56 97 61 C100 74 99 90 95 103 C86 108 54 108 45 103 C41 90 40 74 43 61 Z"><title>前胸壁/乳房</title></path>
+          <path class="zone" data-part="abdomen_front" data-side="" d="M45 104 C54 109 86 109 95 104 L92 145 C84 151 56 151 48 145 Z"><title>前腹壁</title></path>
+          <path class="zone" data-part="hip" data-side="" d="M49 146 C58 153 82 153 91 146 C89 158 84 168 78 172 C73 174 67 174 62 172 C56 168 51 158 49 146 Z"><title>髖部</title></path>
+          <path class="zone" data-part="shoulder" data-side="right" d="M44 60 C36 61 30 66 27 77 C31 83 39 84 46 77 L52 63 C50 61 47 60 44 60 Z"><title>右肩</title></path>
+          <path class="zone" data-part="shoulder" data-side="left" d="M96 60 C104 61 110 66 113 77 C109 83 101 84 94 77 L88 63 C90 61 93 60 96 60 Z"><title>左肩</title></path>
+          <path class="zone" data-part="upper_arm" data-side="right" d="M27 78 C23 90 20 105 18 121 C21 125 28 126 32 122 C34 105 38 91 44 78 C38 84 31 84 27 78 Z"><title>右上臂</title></path>
+          <path class="zone" data-part="upper_arm" data-side="left" d="M113 78 C117 90 120 105 122 121 C119 125 112 126 108 122 C106 105 102 91 96 78 C102 84 109 84 113 78 Z"><title>左上臂</title></path>
+          <ellipse class="zone" data-part="elbow" data-side="right" cx="25" cy="126" rx="9" ry="10"><title>右肘</title></ellipse>
+          <ellipse class="zone" data-part="elbow" data-side="left" cx="115" cy="126" rx="9" ry="10"><title>左肘</title></ellipse>
+          <path class="zone" data-part="forearm" data-side="right" d="M18 131 C17 143 14 156 13 169 C16 173 23 174 27 170 C29 157 31 144 33 132 C29 129 22 128 18 131 Z"><title>右前臂</title></path>
+          <path class="zone" data-part="forearm" data-side="left" d="M122 131 C123 143 126 156 127 169 C124 173 117 174 113 170 C111 157 109 144 107 132 C111 129 118 128 122 131 Z"><title>左前臂</title></path>
+          <ellipse class="zone" data-part="wrist" data-side="right" cx="20" cy="174" rx="8" ry="6"><title>右手腕</title></ellipse>
+          <ellipse class="zone" data-part="wrist" data-side="left" cx="120" cy="174" rx="8" ry="6"><title>左手腕</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="189" rx="11" ry="14"><title>右手</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="189" rx="11" ry="14"><title>左手</title></ellipse>
+          <path class="zone" data-part="thigh" data-side="right" d="M59 171 C55 179 51 198 48 219 C53 224 62 224 67 219 L69 172 Z"><title>右大腿</title></path>
+          <path class="zone" data-part="thigh" data-side="left" d="M81 171 C85 179 89 198 92 219 C87 224 78 224 73 219 L71 172 Z"><title>左大腿</title></path>
+          <ellipse class="zone" data-part="knee" data-side="right" cx="58" cy="224" rx="10" ry="10"><title>右膝</title></ellipse>
+          <ellipse class="zone" data-part="knee" data-side="left" cx="82" cy="224" rx="10" ry="10"><title>左膝</title></ellipse>
+          <path class="zone" data-part="lower_leg" data-side="right" d="M48 230 C49 239 50 247 51 254 L63 254 C65 246 67 238 68 230 C63 232 53 232 48 230 Z"><title>右小腿</title></path>
+          <path class="zone" data-part="lower_leg" data-side="left" d="M72 230 C73 238 75 246 77 254 L89 254 C90 247 91 239 92 230 C87 232 77 232 72 230 Z"><title>左小腿</title></path>
+          <ellipse class="zone" data-part="ankle" data-side="right" cx="56" cy="252" rx="9" ry="6"><title>右踝</title></ellipse>
+          <ellipse class="zone" data-part="ankle" data-side="left" cx="84" cy="252" rx="9" ry="6"><title>左踝</title></ellipse>
+          <path class="zone" data-part="foot" data-side="right" d="M45 253 C51 251 62 252 67 257 L65 260 L43 260 Z"><title>右足</title></path>
+          <path class="zone" data-part="foot" data-side="left" d="M73 257 C78 252 89 251 95 253 L97 260 L75 260 Z"><title>左足</title></path>
         </svg>
       </div>
       <div class="figure-pane">
         <div class="figure-title">後面</div>
         <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體後面">
+          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 161 18 165 25 164 L36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C51 251 56 255 63 254 L69 177 L71 177 L77 254 C84 255 89 251 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 L115 164 C122 165 126 161 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
+          <path class="body-detail" d="M70 56 L70 151 M53 64 C61 58 79 58 87 64 M50 96 C59 100 81 100 90 96 M55 152 C63 158 77 158 85 152 M60 171 C64 177 67 204 67 250 M80 171 C76 177 73 204 73 250"></path>
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
-          <circle class="zone" data-part="occiput" data-side="" cx="70" cy="28" r="16"><title>後腦/枕部</title></circle>
-          <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>後頸</title></rect>
-          <path class="zone" data-part="chest_back" data-side="" d="M47 58 L93 58 L96 92 L44 92 Z"><title>後胸壁</title></path>
-          <path class="zone" data-part="thoracic_spine" data-side="" d="M64 59 L76 59 L78 98 L62 98 Z"><title>胸椎/胸髓</title></path>
-          <path class="zone" data-part="scapula" data-side="right" d="M45 63 L59 67 L56 88 L40 83 Z"><title>右肩胛</title></path>
-          <path class="zone" data-part="scapula" data-side="left" d="M95 63 L81 67 L84 88 L100 83 Z"><title>左肩胛</title></path>
-          <path class="zone" data-part="lower_back" data-side="" d="M44 93 L96 93 L99 126 L41 126 Z"><title>下背/腰</title></path>
-          <path class="zone" data-part="buttock" data-side="" d="M45 127 L95 127 L88 166 L52 166 Z"><title>臀部</title></path>
-          <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
-          <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
-          <path class="zone" data-part="upper_arm" data-side="right" d="M29 68 L19 109 L31 112 L39 81 Z"><title>右上臂</title></path>
-          <path class="zone" data-part="upper_arm" data-side="left" d="M111 68 L121 109 L109 112 L101 81 Z"><title>左上臂</title></path>
-          <circle class="zone" data-part="elbow" data-side="right" cx="24" cy="117" r="8"><title>右肘</title></circle>
-          <circle class="zone" data-part="elbow" data-side="left" cx="116" cy="117" r="8"><title>左肘</title></circle>
-          <path class="zone" data-part="forearm" data-side="right" d="M20 124 L14 161 L26 163 L31 124 Z"><title>右前臂</title></path>
-          <path class="zone" data-part="forearm" data-side="left" d="M120 124 L126 161 L114 163 L109 124 Z"><title>左前臂</title></path>
-          <rect class="zone" data-part="wrist" data-side="right" x="12" y="164" width="14" height="8" rx="4"><title>右手腕</title></rect>
-          <rect class="zone" data-part="wrist" data-side="left" x="114" y="164" width="14" height="8" rx="4"><title>左手腕</title></rect>
-          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="181" rx="10" ry="12"><title>右手</title></ellipse>
-          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="181" rx="10" ry="12"><title>左手</title></ellipse>
-          <path class="zone" data-part="thigh" data-side="right" d="M55 167 L68 167 L65 213 L48 213 Z"><title>右大腿</title></path>
-          <path class="zone" data-part="thigh" data-side="left" d="M72 167 L85 167 L92 213 L75 213 Z"><title>左大腿</title></path>
-          <circle class="zone" data-part="knee" data-side="right" cx="57" cy="218" r="8"><title>右膝</title></circle>
-          <circle class="zone" data-part="knee" data-side="left" cx="83" cy="218" r="8"><title>左膝</title></circle>
-          <path class="zone" data-part="lower_leg" data-side="right" d="M49 227 L65 227 L62 247 L48 247 Z"><title>右小腿</title></path>
-          <path class="zone" data-part="lower_leg" data-side="left" d="M75 227 L91 227 L92 247 L78 247 Z"><title>左小腿</title></path>
-          <path class="zone" data-part="achilles" data-side="right" d="M59 226 L65 226 L63 248 L56 248 Z"><title>右跟腱</title></path>
-          <path class="zone" data-part="achilles" data-side="left" d="M75 226 L81 226 L84 248 L77 248 Z"><title>左跟腱</title></path>
-          <rect class="zone" data-part="ankle" data-side="right" x="47" y="248" width="15" height="6" rx="3"><title>右踝</title></rect>
-          <rect class="zone" data-part="ankle" data-side="left" x="78" y="248" width="15" height="6" rx="3"><title>左踝</title></rect>
-          <path class="zone" data-part="foot" data-side="right" d="M45 254 L63 254 L65 260 L42 260 Z"><title>右足</title></path>
-          <path class="zone" data-part="foot" data-side="left" d="M77 254 L95 254 L98 260 L75 260 Z"><title>左足</title></path>
+          <ellipse class="zone" data-part="occiput" data-side="" cx="70" cy="30" rx="17" ry="20"><title>後腦/枕部</title></ellipse>
+          <path class="zone" data-part="neck" data-side="" d="M61 48 C64 54 76 54 79 48 L81 61 C76 65 64 65 59 61 Z"><title>後頸</title></path>
+          <path class="zone" data-part="chest_back" data-side="" d="M43 61 C52 56 88 56 97 61 C100 72 99 84 96 95 C87 101 53 101 44 95 C41 84 40 72 43 61 Z"><title>後胸壁</title></path>
+          <path class="zone" data-part="thoracic_spine" data-side="" d="M64 58 C68 57 72 57 76 58 L78 101 C74 103 66 103 62 101 Z"><title>胸椎/胸髓</title></path>
+          <path class="zone" data-part="scapula" data-side="right" d="M45 65 C52 64 59 68 61 75 L56 91 C48 91 42 86 40 80 C41 73 42 69 45 65 Z"><title>右肩胛</title></path>
+          <path class="zone" data-part="scapula" data-side="left" d="M95 65 C88 64 81 68 79 75 L84 91 C92 91 98 86 100 80 C99 73 98 69 95 65 Z"><title>左肩胛</title></path>
+          <path class="zone" data-part="lower_back" data-side="" d="M44 96 C53 101 87 101 96 96 L98 127 C88 133 52 133 42 127 Z"><title>下背/腰</title></path>
+          <path class="zone" data-part="buttock" data-side="" d="M43 128 C53 134 87 134 97 128 C96 146 90 161 82 168 C76 171 64 171 58 168 C50 161 44 146 43 128 Z"><title>臀部</title></path>
+          <path class="zone" data-part="shoulder" data-side="right" d="M44 60 C36 61 30 66 27 77 C31 83 39 84 46 77 L52 63 C50 61 47 60 44 60 Z"><title>右肩</title></path>
+          <path class="zone" data-part="shoulder" data-side="left" d="M96 60 C104 61 110 66 113 77 C109 83 101 84 94 77 L88 63 C90 61 93 60 96 60 Z"><title>左肩</title></path>
+          <path class="zone" data-part="upper_arm" data-side="right" d="M27 78 C23 90 20 105 18 121 C21 125 28 126 32 122 C34 105 38 91 44 78 C38 84 31 84 27 78 Z"><title>右上臂</title></path>
+          <path class="zone" data-part="upper_arm" data-side="left" d="M113 78 C117 90 120 105 122 121 C119 125 112 126 108 122 C106 105 102 91 96 78 C102 84 109 84 113 78 Z"><title>左上臂</title></path>
+          <ellipse class="zone" data-part="elbow" data-side="right" cx="25" cy="126" rx="9" ry="10"><title>右肘</title></ellipse>
+          <ellipse class="zone" data-part="elbow" data-side="left" cx="115" cy="126" rx="9" ry="10"><title>左肘</title></ellipse>
+          <path class="zone" data-part="forearm" data-side="right" d="M18 131 C17 143 14 156 13 169 C16 173 23 174 27 170 C29 157 31 144 33 132 C29 129 22 128 18 131 Z"><title>右前臂</title></path>
+          <path class="zone" data-part="forearm" data-side="left" d="M122 131 C123 143 126 156 127 169 C124 173 117 174 113 170 C111 157 109 144 107 132 C111 129 118 128 122 131 Z"><title>左前臂</title></path>
+          <ellipse class="zone" data-part="wrist" data-side="right" cx="20" cy="174" rx="8" ry="6"><title>右手腕</title></ellipse>
+          <ellipse class="zone" data-part="wrist" data-side="left" cx="120" cy="174" rx="8" ry="6"><title>左手腕</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="right" cx="18" cy="189" rx="11" ry="14"><title>右手</title></ellipse>
+          <ellipse class="zone" data-part="hand" data-side="left" cx="122" cy="189" rx="11" ry="14"><title>左手</title></ellipse>
+          <path class="zone" data-part="thigh" data-side="right" d="M59 171 C55 179 51 198 48 219 C53 224 62 224 67 219 L69 172 Z"><title>右大腿</title></path>
+          <path class="zone" data-part="thigh" data-side="left" d="M81 171 C85 179 89 198 92 219 C87 224 78 224 73 219 L71 172 Z"><title>左大腿</title></path>
+          <ellipse class="zone" data-part="knee" data-side="right" cx="58" cy="224" rx="10" ry="10"><title>右膝</title></ellipse>
+          <ellipse class="zone" data-part="knee" data-side="left" cx="82" cy="224" rx="10" ry="10"><title>左膝</title></ellipse>
+          <path class="zone" data-part="lower_leg" data-side="right" d="M48 230 C49 239 50 247 51 254 L63 254 C65 246 67 238 68 230 C63 232 53 232 48 230 Z"><title>右小腿</title></path>
+          <path class="zone" data-part="lower_leg" data-side="left" d="M72 230 C73 238 75 246 77 254 L89 254 C90 247 91 239 92 230 C87 232 77 232 72 230 Z"><title>左小腿</title></path>
+          <path class="zone" data-part="achilles" data-side="right" d="M58 229 C62 229 66 230 68 231 L65 252 C62 254 57 254 54 252 Z"><title>右跟腱</title></path>
+          <path class="zone" data-part="achilles" data-side="left" d="M72 231 C74 230 78 229 82 229 L86 252 C83 254 78 254 75 252 Z"><title>左跟腱</title></path>
+          <ellipse class="zone" data-part="ankle" data-side="right" cx="56" cy="252" rx="9" ry="6"><title>右踝</title></ellipse>
+          <ellipse class="zone" data-part="ankle" data-side="left" cx="84" cy="252" rx="9" ry="6"><title>左踝</title></ellipse>
+          <path class="zone" data-part="foot" data-side="right" d="M45 253 C51 251 62 252 67 257 L65 260 L43 260 Z"><title>右足</title></path>
+          <path class="zone" data-part="foot" data-side="left" d="M73 257 C78 252 89 251 95 253 L97 260 L75 260 Z"><title>左足</title></path>
         </svg>
       </div>
     </div>
