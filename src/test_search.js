@@ -121,6 +121,11 @@ function prefixGuard(){
     ["下背骨折 S32，不可跑出顱骨 S02","fracture",["S32"],["S32"],["S02"]],
     ["前臂骨折 refine 只留 S52","radius fracture",["S52"],["S52"],["S42","S62"]],
     ["手部骨折 refine 只留 S62","metacarpal fracture",["S62"],["S62"],["S52"]],
+    ["後胸壁挫傷只留 S20.22/S20.4","contusion back wall thorax",["S20.22","S20.4"],["S20.22","S20.4"],["S20.0","S20.1","S20.21","S20.3"]],
+    ["前胸壁挫傷不可含後胸 S20.22","contusion front wall thorax",["S20.0","S20.1","S20.21","S20.3"],["S20.0","S20.1","S20.21","S20.3"],["S20.22","S20.4"]],
+    ["肩胛骨折只留 S42.1","scapula fracture",["S42.1"],["S42.1"],["S42.0","S42.2","S42.3"]],
+    ["跟腱傷只留 S86.0","achilles tendon",["S86.0"],["S86.0"],["S86.1","S86.2","S86.3","S86.8","S86.9"]],
+    ["下背挫傷只留 S30.0 且不可含腹壁 S30.1","contusion lower back pelvis",["S30.0"],["S30.0"],["S30.1"]],
     ["前/後軀幹燒傷只留 T21","burn chest abdomen",["T21"],["T21"],["T20","T22","T23","T24","T25"]],
   ];
   let okAll=true;

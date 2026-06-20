@@ -175,8 +175,8 @@
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
           <circle class="zone" data-part="face" data-side="" cx="70" cy="28" r="16"><title>臉部</title></circle>
           <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>頸部</title></rect>
-          <path class="zone" data-part="chest" data-side="" d="M48 58 L92 58 L98 104 L42 104 Z"><title>胸部</title></path>
-          <path class="zone" data-part="abdomen" data-side="" d="M43 105 L97 105 L91 145 L49 145 Z"><title>腹部</title></path>
+          <path class="zone" data-part="chest_front" data-side="" d="M48 58 L92 58 L98 104 L42 104 Z"><title>前胸壁/乳房</title></path>
+          <path class="zone" data-part="abdomen_front" data-side="" d="M43 105 L97 105 L91 145 L49 145 Z"><title>前腹壁</title></path>
           <path class="zone" data-part="hip" data-side="" d="M48 146 L92 146 L85 166 L55 166 Z"><title>髖部</title></path>
           <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
           <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
@@ -206,10 +206,13 @@
         <div class="figure-title">後面</div>
         <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體後面">
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
-          <circle class="zone" data-part="head" data-side="" cx="70" cy="28" r="16"><title>頭部</title></circle>
+          <circle class="zone" data-part="occiput" data-side="" cx="70" cy="28" r="16"><title>後腦/枕部</title></circle>
           <rect class="zone" data-part="neck" data-side="" x="61" y="45" width="18" height="12" rx="5"><title>後頸</title></rect>
-          <path class="zone" data-part="back_upper" data-side="" d="M47 58 L93 58 L96 92 L44 92 Z"><title>上背/胸背</title></path>
-          <path class="zone" data-part="back_lower" data-side="" d="M44 93 L96 93 L99 126 L41 126 Z"><title>下背/腰背</title></path>
+          <path class="zone" data-part="chest_back" data-side="" d="M47 58 L93 58 L96 92 L44 92 Z"><title>後胸壁</title></path>
+          <path class="zone" data-part="thoracic_spine" data-side="" d="M64 59 L76 59 L78 98 L62 98 Z"><title>胸椎/胸髓</title></path>
+          <path class="zone" data-part="scapula" data-side="right" d="M45 63 L59 67 L56 88 L40 83 Z"><title>右肩胛</title></path>
+          <path class="zone" data-part="scapula" data-side="left" d="M95 63 L81 67 L84 88 L100 83 Z"><title>左肩胛</title></path>
+          <path class="zone" data-part="lower_back" data-side="" d="M44 93 L96 93 L99 126 L41 126 Z"><title>下背/腰</title></path>
           <path class="zone" data-part="buttock" data-side="" d="M45 127 L95 127 L88 166 L52 166 Z"><title>臀部</title></path>
           <path class="zone" data-part="shoulder" data-side="right" d="M42 59 L30 66 L36 82 L48 72 Z"><title>右肩</title></path>
           <path class="zone" data-part="shoulder" data-side="left" d="M98 59 L110 66 L104 82 L92 72 Z"><title>左肩</title></path>
@@ -229,6 +232,8 @@
           <circle class="zone" data-part="knee" data-side="left" cx="83" cy="218" r="8"><title>左膝</title></circle>
           <path class="zone" data-part="lower_leg" data-side="right" d="M49 227 L65 227 L62 247 L48 247 Z"><title>右小腿</title></path>
           <path class="zone" data-part="lower_leg" data-side="left" d="M75 227 L91 227 L92 247 L78 247 Z"><title>左小腿</title></path>
+          <path class="zone" data-part="achilles" data-side="right" d="M59 226 L65 226 L63 248 L56 248 Z"><title>右跟腱</title></path>
+          <path class="zone" data-part="achilles" data-side="left" d="M75 226 L81 226 L84 248 L77 248 Z"><title>左跟腱</title></path>
           <rect class="zone" data-part="ankle" data-side="right" x="47" y="248" width="15" height="6" rx="3"><title>右踝</title></rect>
           <rect class="zone" data-part="ankle" data-side="left" x="78" y="248" width="15" height="6" rx="3"><title>左踝</title></rect>
           <path class="zone" data-part="foot" data-side="right" d="M45 254 L63 254 L65 260 L42 260 Z"><title>右足</title></path>
@@ -416,19 +421,30 @@ document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>setScope(b.d
 const INJURY_LABEL={laceration:"撕裂傷",contusion:"挫傷",fracture:"骨折",sprain:"扭傷",abrasion:"擦傷",burn:"燒燙傷"};
 const SIDE_LABEL={auto:"自動側別",none:"未指定側別",left:"左側",right:"右側",bilateral:"雙側"};
 const PART_SORT_TEXT={
-  head:"head scalp",face:"face",neck:"neck",chest:"chest",abdomen:"abdomen pelvis",
-  back_upper:"thoracic back",back_lower:"low back lumbar",hip:"hip thigh",buttock:"buttock",
+  head:"head scalp",face:"face",occiput:"occiput scalp",neck:"neck",
+  chest:"chest",chest_front:"front wall thorax breast",chest_back:"back wall thorax",
+  abdomen:"abdomen pelvis",abdomen_front:"abdominal wall",
+  back_upper:"thoracic back",thoracic_spine:"thoracic spine spinal cord",
+  back_lower:"low back lumbar",lower_back:"lower back lumbar sacrum coccyx",hip:"hip thigh",buttock:"buttock",
+  scapula:"scapula shoulder",achilles:"achilles tendon",
   shoulder:"shoulder",upper_arm:"upper arm",elbow:"elbow",forearm:"forearm",wrist:"wrist",hand:"hand",
   thigh:"thigh",knee:"knee",lower_leg:"lower leg",ankle:"ankle",foot:"foot"
 };
 const PART_LABEL={
-  head:"頭部",face:"臉部",neck:"頸部",chest:"胸部",abdomen:"腹部",
-  back_upper:"上背/胸背",back_lower:"下背/腰背",hip:"髖部",buttock:"臀部",
+  head:"頭部",face:"臉部",occiput:"後腦/枕部",neck:"頸部",
+  chest:"胸部",chest_front:"前胸壁/乳房",chest_back:"後胸壁",
+  abdomen:"腹部",abdomen_front:"前腹壁",
+  back_upper:"上背/胸背",thoracic_spine:"胸椎/胸髓",
+  back_lower:"下背/腰背",lower_back:"下背/腰",hip:"髖部",buttock:"臀部",
+  scapula:"肩胛",achilles:"跟腱",
   shoulder:"肩部",upper_arm:"上臂",elbow:"肘部",forearm:"前臂",wrist:"手腕",hand:"手部",
   thigh:"大腿",knee:"膝部",lower_leg:"小腿",ankle:"踝部",foot:"足部"
 };
+function injuryEntry(prefixes,q){
+  return {prefixes:Array.isArray(prefixes)?prefixes:[prefixes],q:q||""};
+}
 function injuryMap(superficial,openWound,fracture,sprain,q){
-  const mk=(prefixes,sortText)=>({prefixes:Array.isArray(prefixes)?prefixes:[prefixes],q:sortText||q||""});
+  const mk=(prefixes,sortText)=>injuryEntry(prefixes,sortText||q||"");
   return {
     abrasion:mk(superficial),
     contusion:mk(superficial),
@@ -439,13 +455,26 @@ function injuryMap(superficial,openWound,fracture,sprain,q){
 }
 const ANATOMICAL_MAP={
   head:injuryMap("S00","S01","S02","S03","head scalp"),
-  face:injuryMap("S00","S01","S02","S03","face"),
+  face:injuryMap("S00","S01",["S02.2","S02.3","S02.4","S02.5","S02.6","S02.8"],"S03","face"),
+  occiput:injuryMap("S00.0","S01.0","S02.11","S03","occiput scalp"),
   neck:injuryMap("S10","S11","S12","S13","neck"),
   chest:injuryMap("S20","S21","S22","S23","chest"),
+  chest_front:injuryMap(["S20.0","S20.1","S20.21","S20.3"],["S21.0","S21.1","S21.3"],["S22.2","S22.3","S22.4","S22.5"],"S23","front wall thorax breast"),
+  chest_back:injuryMap(["S20.22","S20.4"],["S21.2","S21.4"],["S22.3","S22.4","S22.5"],"S23","back wall thorax rib"),
   abdomen:injuryMap("S30","S31","S32","S33","abdomen pelvis"),
+  abdomen_front:injuryMap("S30.1","S31.1","S32","S33","abdominal wall"),
   back_upper:injuryMap("S20","S21","S22","S23","thoracic back"),
+  thoracic_spine:{
+    abrasion:injuryEntry("S24","thoracic spinal cord"),
+    contusion:injuryEntry("S24","thoracic spinal cord"),
+    laceration:injuryEntry("S24","thoracic spinal cord"),
+    fracture:injuryEntry("S22.0","thoracic vertebra"),
+    sprain:injuryEntry("S23","thoracic spine")
+  },
   back_lower:injuryMap("S30","S31","S32","S33","low back lumbar"),
-  buttock:injuryMap("S30","S31","S32","S33","buttock pelvis"),
+  lower_back:injuryMap("S30.0","S31.0",["S32.0","S32.1","S32.2"],"S33","lower back lumbar sacrum coccyx"),
+  buttock:injuryMap("S30.0","S31.8","S32","S33","buttock pelvis"),
+  scapula:injuryMap("S40","S41","S42.1","S43.31","scapula shoulder"),
   shoulder:injuryMap("S40","S41","S42","S43","shoulder"),
   upper_arm:injuryMap("S40","S41","S42","S43","upper arm"),
   elbow:injuryMap("S50","S51","S52","S53","elbow forearm"),
@@ -454,8 +483,9 @@ const ANATOMICAL_MAP={
   hand:injuryMap("S60","S61","S62","S63","hand"),
   hip:injuryMap("S70","S71","S72","S73","hip thigh"),
   thigh:injuryMap("S70","S71","S72","S73","thigh"),
-  knee:injuryMap("S80","S81","S82","S83","knee lower leg"),
+  knee:injuryMap("S80","S81","S82.0","S83.0","patella knee"),
   lower_leg:injuryMap("S80","S81","S82","S83","lower leg"),
+  achilles:injuryMap("S86.0","S86.0","S86.0","S86.0","achilles tendon"),
   ankle:injuryMap("S90","S91","S92","S93","ankle foot"),
   foot:injuryMap("S90","S91","S92","S93","foot"),
 };
@@ -464,12 +494,19 @@ function addBurn(part,prefixes,q){
 }
 addBurn("head","T20","head scalp");
 addBurn("face","T20","face");
+addBurn("occiput","T20","head scalp");
 addBurn("neck","T20","neck");
 addBurn("chest","T21","chest abdomen");
+addBurn("chest_front","T21","chest abdomen");
+addBurn("chest_back","T21","back buttock");
 addBurn("abdomen","T21","chest abdomen");
+addBurn("abdomen_front","T21","chest abdomen");
 addBurn("back_upper","T21","back buttock");
+addBurn("thoracic_spine","T21","back buttock");
 addBurn("back_lower","T21","back buttock");
+addBurn("lower_back","T21","back buttock");
 addBurn("buttock","T21","back buttock");
+addBurn("scapula","T21","back buttock");
 addBurn("shoulder","T22","shoulder upper arm");
 addBurn("upper_arm","T22","upper arm");
 addBurn("elbow","T22","elbow forearm");
@@ -480,6 +517,7 @@ addBurn("hip","T24","hip thigh");
 addBurn("thigh","T24","thigh");
 addBurn("knee","T24","knee lower leg");
 addBurn("lower_leg","T24","lower leg");
+addBurn("achilles","T24","lower leg");
 addBurn("ankle","T25","ankle foot");
 addBurn("foot","T25","foot");
 let traumaInjury="laceration", traumaSideMode="auto";
