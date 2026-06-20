@@ -49,6 +49,11 @@ const cases = [
   ["perianal abscess","K61.0"],   // 字母索引別名
   ["anal fissure","K60.2"],       // 字母索引
   ["right middle finger laceration","S61.21"],  // 單純傷口應勝肌腱傷
+  ["right ring finger laceration","S61.2"],      // 不同手指
+  ["lt index finger laceration","S61.2"],
+  ["rt middle toe laceration","S91.11"],         // 腳趾：middle toe→lesser toe 撕裂傷
+  ["big toe laceration","S91.11"],               // great toe
+  ["toe laceration","S91.1"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

@@ -47,11 +47,17 @@ function hasCJK(s){return /[一-鿿]/.test(s);}
 function norm(q){
   q = q.toLowerCase().replace(/[,\.\(\)\/]/g," ").replace(/#/g," fracture ");
   const parts = q.split(/\s+/).filter(Boolean);
-  const out=[];
+  let out=[];
   for(let w of parts){
     if(ABBR[w]){ for(const t of ABBR[w].split(" ")) if(!STOP.has(t)) out.push(t); continue; }
     w = SYN[w]||w;
     for(const t of w.split(" ")){ if(t&&!STOP.has(t)) out.push(t); }
+  }
+  // 腳趾命名正規化：ICD 只有 great toe / lesser toe，把口語的 middle/second/little toe 等轉過去
+  if(out.includes("toe")||out.includes("toes")){
+    const GREAT=new Set(["great","big","first","1st","large"]);
+    const LESSER=new Set(["little","middle","ring","index","second","third","fourth","fifth","2nd","3rd","4th","5th","small","pinky","lesser"]);
+    out=out.map(w=>GREAT.has(w)?"great":LESSER.has(w)?"lesser":w);
   }
   return out;
 }
