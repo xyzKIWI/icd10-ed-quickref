@@ -48,7 +48,18 @@ const cases = [
   ["abscess anus","K61.0"],       // 字母索引：俗稱→碼
   ["perianal abscess","K61.0"],   // 字母索引別名
   ["anal fissure","K60.2"],       // 字母索引
+  ["right middle finger laceration","S61.21"],  // 單純傷口應勝肌腱傷
 ];
+
+// ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前
+function fingerGuard(){
+  const r=C.searchCore(IDX,"right middle finger laceration","all").slice(0,5).map(x=>x[1].e.c);
+  const s61=r.findIndex(c=>c.startsWith("S61.21"));
+  const s56=r.findIndex(c=>c.startsWith("S56"));
+  const ok = s61>=0 && (s56<0 || s61<s56);
+  console.log((ok?"✅":"❌")+" 手指傷守門：finger laceration 前5名 = "+r.join(", "));
+  return ok;
+}
 
 // 極性相反守門：查 traumatic 時，S06 創傷性必須排在 I61 非創傷性之前
 function polarityGuard(){
@@ -76,5 +87,6 @@ const t0=Date.now(); const N=20;
 for(let i=0;i<N;i++) for(const q of qs) C.searchCore(IDX,q,"all");
 const ms=(Date.now()-t0)/(N*qs.length);
 const guardOk = polarityGuard();
+const fingerOk = fingerGuard();
 console.log(`=== ${pass}/${cases.length} 通過 ｜ 平均單次查詢 ${ms.toFixed(1)} ms（${IDX.length} 條目）===`);
-process.exit(pass===cases.length && guardOk?0:1);
+process.exit(pass===cases.length && guardOk && fingerOk?0:1);

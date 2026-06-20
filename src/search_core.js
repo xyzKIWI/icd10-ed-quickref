@@ -71,6 +71,11 @@ function levLE(a,b,max){
   }
   return prev[n];
 }
+// 專一構造詞：碼名有、但 query 沒提 → 該碼較專一，往下壓（優先單純傷口/部位碼）
+const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve","vessel",
+                   "flexor","extensor","abductor","adductor","intrinsic"];
+function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
+
 function indexEntry(e,kind){
   const toks = e.en.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t&&!STOP.has(t));
   // 官方字母索引別名（同義詞/俗稱/eponym）：另存，比對時給較低分，避免上層解剖詞污染
@@ -115,7 +120,11 @@ function scoreEntry(item,qtoks,cjk){
   if(matched===0) return 0;
   const cov = matched/qtoks.length;
   if(cov<0.5) return 0;
-  return score*cov;
+  // 專一構造詞懲罰：碼名提到 tendon/muscle/artery/nerve… 但使用者沒打 → 往下壓
+  // （讓單純「laceration」優先開放性傷口碼，而非肌腱/血管/神經的專一傷）
+  let pen=0;
+  for(const w of SPECIFIER){ if(item.hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.4; if(pen>=1.2)break; } }
+  return score*cov - pen;
 }
 function buildCode(stem,ch){
   if(!ch) return stem;
