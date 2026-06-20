@@ -16,8 +16,11 @@ const SYN = {
   "collarbone":"clavicle",
   "stone":"calculus","stones":"calculus","calculi":"calculus",   // 結石：官方用 calculus
   "renal":"kidney","ureteral":"ureter","urethral":"urethra",
+  "dizzy":"dizziness","epigastralgia":"epigastric pain","fb":"foreign body",   // 真實病歷常見措辭
 };
-const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x"]);
+const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
+  "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
+  "impression","probable","possible","need","should","over"]);  // 急診病程慣用修飾詞
 // 英文縮寫 → 完整詞（會再切成多 token）
 const ABBR = {
   // 感染/呼吸
@@ -41,11 +44,18 @@ const ABBR = {
   "dm":"diabetes","dka":"diabetes ketoacidosis","hhs":"hyperosmolar hyperglycemia",
   "ckd":"chronic kidney","aki":"acute kidney failure","esrd":"end stage renal","arf":"acute kidney failure",
   "bph":"benign prostatic hyperplasia","pid":"pelvic inflammatory","cp":"chest pain","abd":"abdominal",
+  // 由真實 KMUH 急診病歷高頻縮寫補入
+  "age":"acute gastroenteritis","pn":"pneumonia","ugi":"upper gastrointestinal",
+  "aur":"retention urine","apn":"acute pyelonephritis","lbp":"low back pain",
+  "ohca":"cardiac arrest","psvt":"supraventricular tachycardia","vt":"ventricular tachycardia",
+  "hcc":"liver cell carcinoma","mdd":"major depressive","urosepsis":"urosepsis",
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
 function norm(q){
-  q = q.toLowerCase().replace(/[,\.\(\)\/]/g," ").replace(/#/g," fracture ");
+  q = q.toLowerCase();
+  q = q.replace(/[,;]?\s*(cause|focus|etiology)\s+(to\s+be\s+)?determin\w*/g," ");  // 剝「…cause to be determined」尾綴
+  q = q.replace(/[,\.\(\)\/\-]/g," ").replace(/#/g," fracture ");   // 連字號也拆（covid-19→covid 19、a-v→a v）
   const parts = q.split(/\s+/).filter(Boolean);
   let out=[];
   for(let w of parts){

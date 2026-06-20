@@ -72,6 +72,17 @@ const cases = [
   ["metatarsal fracture","S92.3"],
   ["great toe fracture","S92.4"],
   ["lesser toe fracture","S92.5"],
+  // 真實 KMUH 急診措辭（縮寫/尾綴/連字號）
+  ["pn","J18"],
+  ["ugi bleeding","K92"],
+  ["covid-19","U07.1"],
+  ["fever, cause to be determined","R50.9"],
+  ["dizzy","R42"],
+  ["chest pain, cause to be determined","R07"],
+  ["epigastralgia","R10"],
+  ["lbp","M54"],
+  ["apn","N10"],
+  ["psvt","I47.1"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前
