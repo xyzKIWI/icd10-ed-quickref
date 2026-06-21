@@ -106,11 +106,12 @@
   .body-svg{width:100%;height:auto;display:block;max-height:310px;overflow:visible}
   .body-line{fill:var(--body-fill);stroke:var(--body-line);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
   .body-detail{fill:none;stroke:var(--body-line);stroke-width:1.1;stroke-linecap:round;opacity:.42;pointer-events:none}
-  /* 熱區平時隱形（只露乾淨人形），滑過/選中才上色 */
-  .zone{fill:var(--zoneOn);stroke:none;opacity:0;cursor:pointer;
-        transition:opacity .13s ease, fill .13s ease;vector-effect:non-scaling-stroke}
-  .zone:hover{opacity:.42}
+  /* 熱區平時隱形（只露乾淨人形），滑過/選中才上色。pointer-events:all 保證透明也能 hover */
+  .zone{fill:var(--zoneOn);stroke:none;opacity:0;cursor:pointer;pointer-events:all;
+        transition:opacity .12s ease, fill .12s ease;vector-effect:non-scaling-stroke}
+  .zone:hover{fill:var(--zoneOn);opacity:.5}
   .zone.on{fill:var(--accent);opacity:.62;stroke:var(--accent);stroke-width:2;paint-order:stroke}
+  .zone.on:hover{opacity:.7}
   .body-label{font-size:8px;fill:var(--muted)}
   footer{color:var(--muted);font-size:11px;text-align:center;padding:14px}
   .disclaimer{max-width:760px;margin:18px auto 0;padding:12px 14px;font-size:11.5px;line-height:1.7;
