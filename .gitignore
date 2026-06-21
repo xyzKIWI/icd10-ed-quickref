@@ -15,3 +15,5 @@ design/
 
 # Codex 開發筆記/檢查圖，不進公開 repo
 docs/
+src/build_zones.py
+src/manual_zones.py
