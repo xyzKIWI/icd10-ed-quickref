@@ -137,6 +137,14 @@ function prefixGuard(){
     ["跟腱傷只留 S86.0","achilles tendon",["S86.0"],["S86.0"],["S86.1","S86.2","S86.3","S86.8","S86.9"]],
     ["下背挫傷只留 S30.0 且不可含腹壁 S30.1","contusion lower back pelvis",["S30.0"],["S30.0"],["S30.1"]],
     ["前/後軀幹燒傷只留 T21","burn chest abdomen",["T21"],["T21"],["T20","T22","T23","T24","T25"]],
+    ["鼻骨折只留 S02.2","nasal bone fracture",["S02.2"],["S02.2"],["S02.3","S02.4","S02.5","S02.6"]],
+    ["眼眶骨折只留 S02.3","orbital floor fracture",["S02.3"],["S02.3"],["S02.2","S02.4","S02.5","S02.6"]],
+    ["眼球傷只留 S05","eye injury corneal abrasion",["S05"],["S05"],["S00","S01","S02"]],
+    ["下顎骨折只留 S02.6","mandible jaw fracture",["S02.6"],["S02.6"],["S02.2","S02.3","S02.4","S02.5"]],
+    ["拇指骨折只留 S62.5","thumb phalanx fracture",["S62.5"],["S62.5"],["S62.3","S62.6"]],
+    ["大腳趾骨折只留 S92.4","great toe fracture",["S92.4"],["S92.4"],["S92.3","S92.5"]],
+    ["頭皮撕裂只留 S01.0","scalp laceration",["S01.0"],["S01.0"],["S01.1","S01.2","S01.5"]],
+    ["腳跟骨折只留 S92.0","calcaneus heel fracture",["S92.0"],["S92.0"],["S92.3","S92.4","S92.5"]],
   ];
   let okAll=true;
   for(const [label,q,prefixes,want,deny] of guards){
