@@ -83,6 +83,10 @@ const cases = [
   ["lbp","M54"],
   ["apn","N10"],
   ["psvt","I47.1"],
+  // 臨床回饋修正(2026-06-22)
+  ["nasal bleeding","R04.0"],
+  ["gum bleeding","K06.8"],
+  ["sinusitis","J01"],
   // 精確度(IDF)與同義詞修正
   ["age","A09"],                          // 不再噴 acute MI；腸胃炎
   ["acute gastroenteritis","A09"],

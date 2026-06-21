@@ -112,6 +112,12 @@ const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve"
                    "flexor","extensor","abductor","adductor","intrinsic"];
 function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
 
+// 片語直接對應碼：關鍵字比對救不了的臨床慣用語，直接指定正確碼置頂(臨床回饋持續補)
+const PHRASE_CODE = {
+  "nasal bleeding":["R04.0"],"nose bleeding":["R04.0"],"nosebleed":["R04.0"],"nose bleed":["R04.0"],
+  "gum bleeding":["K06.8"],"gingival bleeding":["K06.8"],"bleeding gum":["K06.8"],"bleeding gums":["K06.8"],
+};
+
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
 // → 只命中常用字的碼會被過濾，大幅提升精確度。DF 只建一次。
 let _DF=null, _DFN=0;
@@ -180,6 +186,8 @@ function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW){
   if(qhas(qtoks,"metacarpal")&&!qhas(qtoks,"first")&&!qhas(qtoks,"1st")&&!qhas(qtoks,"thumb")&&
      hay.includes(" first metacarpal ")) pen+=0.12;
   if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.1;
+  // 沒查 chronic 時，慢性碼降權→急診情境讓急性/未明示優先(如 sinusitis 讓 J01 急性勝 J32 慢性)
+  if(!qhas(qtoks,"chronic") && hay.includes(" chronic ")) pen+=0.14;
   return cov - pen;
 }
 function buildCode(stem,ch){
@@ -255,6 +263,16 @@ function searchCore(IDX,q,scope,prefixes){
     if(sc>0) res.push([sc,item]);
   }
   res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0) || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
-  return res.slice(0, pf ? 60 : 25);     // 部位瀏覽允許多一點
+  let out = res.slice(0, pf ? 60 : 25);
+  // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
+  if(!pf){
+    const forced = PHRASE_CODE[q.toLowerCase().trim().replace(/\s+/g," ")];
+    if(forced){
+      const set=new Set(forced), top=[];
+      for(const code of forced){ const it=IDX.find(x=>x.e.c===code); if(it) top.push([999,it]); }
+      out = top.concat(out.filter(([s,it])=>!set.has(it.e.c)));
+    }
+  }
+  return out;
 }
 if(typeof module!=="undefined")module.exports={SEV_ORDER,SYN,hasCJK,norm,levLE,indexEntry,scoreEntry,buildCode,whyHit,needMore,searchCore,isCodeQuery};

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>急診 ICD-10 速查</title>
+<title>ICD-10 速查</title>
 <style>
   :root{ color-scheme:light; --bg:#f4f7fb; --card:#ffffff; --panel:#eef3f8; --field:#ffffff;
          --line:#c9d5e3; --txt:#142033; --sub:#5d7088; --muted:#7d8fa3;
@@ -65,6 +65,14 @@
   .kmu{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;color:var(--sub);cursor:pointer;user-select:none}
   .kmu input{width:16px;height:16px;accent-color:var(--accent)}
   .kmu b{color:var(--warn)}
+  .fbpanel{display:none;margin-top:9px;padding:10px;border:1px solid var(--accent);border-radius:10px;background:var(--panel)}
+  .fbpanel.show{display:block}
+  .fbpanel textarea{width:100%;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--line);
+        background:var(--field);color:var(--txt);resize:vertical;font-family:inherit}
+  .fbrow{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .fbsave{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .fbview,.fbclear{border:1px solid var(--line);background:var(--field);color:var(--sub);border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer}
+  .fbcount{font-size:12px;color:var(--sub);margin-left:auto}
   .row1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
   .code{font-family:ui-monospace,Menlo,monospace;font-size:21px;font-weight:700;color:var(--code);
         letter-spacing:.5px;cursor:pointer}
@@ -138,7 +146,8 @@
 <body>
 <header>
   <div class="topbar">
-    <h1>急診 ICD-10 速查 <small id="meta"></small></h1>
+    <h1>ICD-10 速查 <small id="meta"></small></h1>
+    <button class="iconbtn" id="fbBtn" type="button" aria-label="回報問題" title="回報搜尋問題">✏️</button>
     <button class="iconbtn" id="themeBtn" type="button" aria-label="切換明暗模式" title="切換明暗模式">☀</button>
   </div>
   <div class="searchbar">
@@ -148,9 +157,17 @@
   </div>
   <div class="scope">
     <button data-s="all" class="on">全部</button>
-    <button data-s="inj">外傷 S·T</button>
-    <button data-s="ext">外因 V·Y</button>
+    <button data-s="inj">外傷</button>
     <button data-s="dx">一般診斷</button>
+  </div>
+  <div class="fbpanel" id="fbPanel">
+    <textarea id="fbText" rows="2" placeholder="這次搜尋哪裡不對？(例：nasal bleeding 找不到 epistaxis)。會自動記下你剛打的關鍵字。"></textarea>
+    <div class="fbrow">
+      <button class="fbsave" id="fbSave" type="button">記下這筆</button>
+      <button class="fbview" id="fbCopy" type="button">複製全部回饋</button>
+      <button class="fbclear" id="fbClearAll" type="button">清空</button>
+      <span class="fbcount" id="fbCount"></span>
+    </div>
   </div>
   <div class="hint">支援英文/中文、縮寫(fx, lac, lt/rt)、拼錯字也能命中。點整個框框即複製代碼。</div>
   <label class="kmu"><input type="checkbox" id="kmuTog"> <span><b>高醫模式</b>：複製時去掉小數點</span></label>
@@ -180,8 +197,8 @@
       <div class="figure-pane">
         <div class="figure-title">前面</div>
         <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體前面">
-          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 160 12 165 12 170 C9 172 7 176 7 179 C7 182 10 182 12 180 C13 177 14 174 16 172 L15 185 C14 191 12 197 12 202 C12 206 16 206 17 202 L19 187 L18 203 C18 207 22 208 23 203 L24 187 L24 203 C24 207 28 207 28 202 L28 187 L30 198 C31 202 35 201 34 197 L30 178 C29 172 27 168 24 166 C29 154 33 140 36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C48 247 45 252 45 256 C45 260 51 260 52 257 C53 260 57 260 58 257 C60 260 64 260 65 257 C67 258 69 256 67 253 C65 249 60 247 54 247 C58 247 62 250 63 254 L69 177 L71 177 L77 254 C78 250 82 247 86 247 C80 247 75 249 73 253 C71 256 73 258 75 257 C76 260 80 260 82 257 C83 260 87 260 88 257 C89 260 95 260 95 256 C95 252 92 247 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 C107 140 111 154 116 166 C113 168 111 172 110 178 L106 197 C105 201 109 202 110 198 L112 187 L112 202 C112 207 116 207 116 203 L116 187 L117 203 C118 208 122 207 122 203 L121 187 L123 202 C124 206 128 206 128 202 C128 197 126 191 125 185 L124 172 C126 174 127 177 128 180 C130 182 133 182 133 179 C133 176 131 172 128 170 C128 165 127 160 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
-          <path class="body-detail" d="M53 61 C61 66 79 66 87 61 M48 104 C57 109 83 109 92 104 M55 151 C63 154 77 154 85 151 M70 177 L70 250 M17 184 L15 202 M21 185 L20 204 M25 185 L25 202 M29 184 L33 198 M123 184 L125 202 M119 185 L120 204 M115 185 L115 202 M111 184 L107 198 M52 255 L51 259 M57 255 L57 259 M62 255 L63 259 M88 255 L89 259 M83 255 L83 259 M78 255 L77 259"></path>
+          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 160 12 165 12 170 C9 173 7 178 7 185 C7 198 14 207 22 207 C31 207 37 198 36 187 C35 176 30 166 23 164 C20 163 17 164 14 166 C19 153 33 140 36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C48 247 45 252 45 256 C45 260 51 260 52 257 C53 260 57 260 58 257 C60 260 64 260 65 257 C67 258 69 256 67 253 C65 249 60 247 54 247 C58 247 62 250 63 254 L69 177 L71 177 L77 254 C78 250 82 247 86 247 C80 247 75 249 73 253 C71 256 73 258 75 257 C76 260 80 260 82 257 C83 260 87 260 88 257 C89 260 95 260 95 256 C95 252 92 247 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 C107 140 121 153 126 166 C123 164 120 163 117 164 C110 166 105 176 104 187 C103 198 109 207 118 207 C126 207 133 198 133 185 C133 178 131 173 128 170 C128 165 127 160 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
+          <path class="body-detail" d="M53 61 C61 66 79 66 87 61 M48 104 C57 109 83 109 92 104 M55 151 C63 154 77 154 85 151 M70 177 L70 250 M15 184 C19 181 28 181 33 184 M125 184 C121 181 112 181 107 184 M52 255 L51 259 M57 255 L57 259 M62 255 L63 259 M88 255 L89 259 M83 255 L83 259 M78 255 L77 259"></path>
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
           <ellipse class="zone" data-part="face" data-side="" cx="70" cy="30" rx="17" ry="20"><title>臉部</title></ellipse>
           <path class="zone" data-part="neck" data-side="" d="M61 48 C64 54 76 54 79 48 L81 61 C76 65 64 65 59 61 Z"><title>頸部</title></path>
@@ -198,8 +215,8 @@
           <path class="zone" data-part="forearm" data-side="left" d="M122 131 C123 143 126 156 127 169 C124 173 117 174 113 170 C111 157 109 144 107 132 C111 129 118 128 122 131 Z"><title>左前臂</title></path>
           <ellipse class="zone" data-part="wrist" data-side="right" cx="20" cy="174" rx="8" ry="6"><title>右手腕</title></ellipse>
           <ellipse class="zone" data-part="wrist" data-side="left" cx="120" cy="174" rx="8" ry="6"><title>左手腕</title></ellipse>
-          <path class="zone" data-part="hand" data-side="right" d="M14 166 C11 169 8 174 7 180 C7 183 10 185 12 182 L12 202 C12 207 17 207 18 203 L19 188 L18 203 C18 208 23 209 24 204 L24 188 L25 203 C25 208 30 208 30 203 L29 188 L31 198 C32 203 37 202 36 197 L32 178 C31 171 28 166 23 164 C20 163 17 163 14 166 Z"><title>右手</title></path>
-          <path class="zone" data-part="hand" data-side="left" d="M126 166 C129 169 132 174 133 180 C133 183 130 185 128 182 L128 202 C128 207 123 207 122 203 L121 188 L122 203 C122 208 117 209 116 204 L116 188 L115 203 C115 208 110 208 110 203 L111 188 L109 198 C108 203 103 202 104 197 L108 178 C109 171 112 166 117 164 C120 163 123 163 126 166 Z"><title>左手</title></path>
+          <path class="zone" data-part="hand" data-side="right" d="M14 166 C10 169 7 176 7 185 C7 198 14 207 22 207 C31 207 37 198 36 187 C35 176 30 166 23 164 C20 163 17 164 14 166 Z"><title>右手</title></path>
+          <path class="zone" data-part="hand" data-side="left" d="M126 166 C130 169 133 176 133 185 C133 198 126 207 118 207 C109 207 103 198 104 187 C105 176 110 166 117 164 C120 163 123 164 126 166 Z"><title>左手</title></path>
           <path class="zone" data-part="thigh" data-side="right" d="M59 171 C55 179 51 198 48 219 C53 224 62 224 67 219 L69 172 Z"><title>右大腿</title></path>
           <path class="zone" data-part="thigh" data-side="left" d="M81 171 C85 179 89 198 92 219 C87 224 78 224 73 219 L71 172 Z"><title>左大腿</title></path>
           <ellipse class="zone" data-part="knee" data-side="right" cx="58" cy="224" rx="10" ry="10"><title>右膝</title></ellipse>
@@ -215,8 +232,8 @@
       <div class="figure-pane">
         <div class="figure-title">後面</div>
         <svg class="body-svg" viewBox="0 0 140 260" role="img" aria-label="人體後面">
-          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 160 12 165 12 170 C9 172 7 176 7 179 C7 182 10 182 12 180 C13 177 14 174 16 172 L15 185 C14 191 12 197 12 202 C12 206 16 206 17 202 L19 187 L18 203 C18 207 22 208 23 203 L24 187 L24 203 C24 207 28 207 28 202 L28 187 L30 198 C31 202 35 201 34 197 L30 178 C29 172 27 168 24 166 C29 154 33 140 36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C48 247 46 251 46 255 C46 259 54 259 59 257 C63 259 68 258 68 255 C67 250 62 247 56 246 C59 248 62 251 63 254 L69 177 L71 177 L77 254 C78 251 81 248 84 246 C78 247 73 250 72 255 C72 258 77 259 81 257 C86 259 94 259 94 255 C94 251 92 247 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 C107 140 111 154 116 166 C113 168 111 172 110 178 L106 197 C105 201 109 202 110 198 L112 187 L112 202 C112 207 116 207 116 203 L116 187 L117 203 C118 208 122 207 122 203 L121 187 L123 202 C124 206 128 206 128 202 C128 197 126 191 125 185 L124 172 C126 174 127 177 128 180 C130 182 133 182 133 179 C133 176 131 172 128 170 C128 165 127 160 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
-          <path class="body-detail" d="M70 56 L70 151 M53 64 C61 58 79 58 87 64 M50 96 C59 100 81 100 90 96 M55 152 C63 158 77 158 85 152 M60 171 C64 177 67 204 67 250 M80 171 C76 177 73 204 73 250 M17 184 L15 202 M21 185 L20 204 M25 185 L25 202 M29 184 L33 198 M123 184 L125 202 M119 185 L120 204 M115 185 L115 202 M111 184 L107 198 M51 254 C55 257 62 257 66 254 M74 254 C78 257 85 257 89 254"></path>
+          <path class="body-line" d="M70 10 C58 10 50 19 50 31 C50 40 55 47 62 50 L60 56 C52 57 45 59 39 65 C33 71 29 84 26 97 L15 154 C14 160 12 165 12 170 C9 173 7 178 7 185 C7 198 14 207 22 207 C31 207 37 198 36 187 C35 176 30 166 23 164 C20 163 17 164 14 166 C19 153 33 140 36 126 C38 117 40 109 42 101 L44 151 C45 160 52 166 59 168 L52 244 C48 247 46 251 46 255 C46 259 54 259 59 257 C63 259 68 258 68 255 C67 250 62 247 56 246 C59 248 62 251 63 254 L69 177 L71 177 L77 254 C78 251 81 248 84 246 C78 247 73 250 72 255 C72 258 77 259 81 257 C86 259 94 259 94 255 C94 251 92 247 88 244 L81 168 C88 166 95 160 96 151 L98 101 C100 109 102 117 104 126 C107 140 121 153 126 166 C123 164 120 163 117 164 C110 166 105 176 104 187 C103 198 109 207 118 207 C126 207 133 198 133 185 C133 178 131 173 128 170 C128 165 127 160 125 154 L114 97 C111 84 107 71 101 65 C95 59 88 57 80 56 L78 50 C85 47 90 40 90 31 C90 19 82 10 70 10 Z"></path>
+          <path class="body-detail" d="M70 56 L70 151 M53 64 C61 58 79 58 87 64 M50 96 C59 100 81 100 90 96 M55 152 C63 158 77 158 85 152 M60 171 C64 177 67 204 67 250 M80 171 C76 177 73 204 73 250 M15 184 C19 181 28 181 33 184 M125 184 C121 181 112 181 107 184 M51 254 C55 257 62 257 66 254 M74 254 C78 257 85 257 89 254"></path>
           <text x="13" y="20" class="body-label">病人右</text><text x="102" y="20" class="body-label">病人左</text>
           <ellipse class="zone" data-part="occiput" data-side="" cx="70" cy="30" rx="17" ry="20"><title>後腦/枕部</title></ellipse>
           <path class="zone" data-part="neck" data-side="" d="M61 48 C64 54 76 54 79 48 L81 61 C76 65 64 65 59 61 Z"><title>後頸</title></path>
@@ -236,8 +253,8 @@
           <path class="zone" data-part="forearm" data-side="left" d="M122 131 C123 143 126 156 127 169 C124 173 117 174 113 170 C111 157 109 144 107 132 C111 129 118 128 122 131 Z"><title>左前臂</title></path>
           <ellipse class="zone" data-part="wrist" data-side="right" cx="20" cy="174" rx="8" ry="6"><title>右手腕</title></ellipse>
           <ellipse class="zone" data-part="wrist" data-side="left" cx="120" cy="174" rx="8" ry="6"><title>左手腕</title></ellipse>
-          <path class="zone" data-part="hand" data-side="right" d="M14 166 C11 169 8 174 7 180 C7 183 10 185 12 182 L12 202 C12 207 17 207 18 203 L19 188 L18 203 C18 208 23 209 24 204 L24 188 L25 203 C25 208 30 208 30 203 L29 188 L31 198 C32 203 37 202 36 197 L32 178 C31 171 28 166 23 164 C20 163 17 163 14 166 Z"><title>右手</title></path>
-          <path class="zone" data-part="hand" data-side="left" d="M126 166 C129 169 132 174 133 180 C133 183 130 185 128 182 L128 202 C128 207 123 207 122 203 L121 188 L122 203 C122 208 117 209 116 204 L116 188 L115 203 C115 208 110 208 110 203 L111 188 L109 198 C108 203 103 202 104 197 L108 178 C109 171 112 166 117 164 C120 163 123 163 126 166 Z"><title>左手</title></path>
+          <path class="zone" data-part="hand" data-side="right" d="M14 166 C10 169 7 176 7 185 C7 198 14 207 22 207 C31 207 37 198 36 187 C35 176 30 166 23 164 C20 163 17 164 14 166 Z"><title>右手</title></path>
+          <path class="zone" data-part="hand" data-side="left" d="M126 166 C130 169 133 176 133 185 C133 198 126 207 118 207 C109 207 103 198 104 187 C105 176 110 166 117 164 C120 163 123 164 126 166 Z"><title>左手</title></path>
           <path class="zone" data-part="thigh" data-side="right" d="M59 171 C55 179 51 198 48 219 C53 224 62 224 67 219 L69 172 Z"><title>右大腿</title></path>
           <path class="zone" data-part="thigh" data-side="left" d="M81 171 C85 179 89 198 92 219 C87 224 78 224 73 219 L71 172 Z"><title>左大腿</title></path>
           <ellipse class="zone" data-part="knee" data-side="right" cx="58" cy="224" rx="10" ry="10"><title>右膝</title></ellipse>
@@ -414,6 +431,33 @@ try{ kmuMode = localStorage.getItem("kmu")==="1"; }catch(e){}
 const kmuTog=document.getElementById("kmuTog");
 kmuTog.checked=kmuMode;
 kmuTog.onchange=()=>{ kmuMode=kmuTog.checked; try{localStorage.setItem("kmu",kmuMode?"1":"0");}catch(e){} };
+
+// ===== 臨床回饋記錄（存 localStorage，可累積後複製給開發者調整）=====
+function fbLoad(){ try{return JSON.parse(localStorage.getItem("fb")||"[]");}catch(e){return [];} }
+function fbCountUpdate(){ const n=fbLoad().length; document.getElementById("fbCount").textContent = n?("已記 "+n+" 筆"):""; }
+const fbPanel=document.getElementById("fbPanel"), fbText=document.getElementById("fbText");
+document.getElementById("fbBtn").onclick=()=>{ fbPanel.classList.toggle("show"); if(fbPanel.classList.contains("show")){fbCountUpdate();fbText.focus();} };
+document.getElementById("fbSave").onclick=()=>{
+  const note=fbText.value.trim(); const q=document.getElementById("q").value.trim();
+  if(!note && !q){ return; }
+  const list=fbLoad();
+  const d=new Date(); const ts=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  list.push({t:ts, q:q, note:note});
+  try{ localStorage.setItem("fb",JSON.stringify(list)); }catch(e){}
+  fbText.value=""; fbCountUpdate();
+  const b=document.getElementById("fbSave"); b.textContent="✓ 已記下"; setTimeout(()=>b.textContent="記下這筆",1200);
+};
+document.getElementById("fbCopy").onclick=()=>{
+  const list=fbLoad();
+  if(!list.length){ alert("還沒有回饋紀錄"); return; }
+  const text=list.map(x=>`[${x.t}] 查「${x.q||"-"}」：${x.note||"(無備註)"}`).join("\n");
+  navigator.clipboard?.writeText(text);
+  const b=document.getElementById("fbCopy"); b.textContent="✓ 已複製"; setTimeout(()=>b.textContent="複製全部回饋",1200);
+};
+document.getElementById("fbClearAll").onclick=()=>{
+  if(!fbLoad().length){ return; }
+  if(confirm("確定清空所有回饋紀錄？(複製過了嗎)")){ try{localStorage.removeItem("fb");}catch(e){} fbCountUpdate(); }
+};
 
 document.getElementById("meta").textContent=DB.version.split("(")[0];
 document.getElementById("ver").textContent=DB.version+"｜共 "+DB.entries.length+" 診斷條目（全章節）｜離線單檔";
