@@ -53,12 +53,19 @@ const ABBR = {
   "aur":"retention urine","apn":"acute pyelonephritis","lbp":"low back pain",
   "ohca":"cardiac arrest","psvt":"supraventricular tachycardia","vt":"ventricular tachycardia",
   "hcc":"liver cell carcinoma","mdd":"major depressive","urosepsis":"urosepsis",
+  // ask-all 縮寫稽核(2026-06-23 Codex+Hermes+本機逐一實跑驗證)：展開字串貼官方碼名用詞
+  "aod":"dissection of aorta",            // 主動脈剝離 I71.0x（不可用 aortic dissection→會混進主動脈體腫瘤）
+  "aom":"acute suppurative otitis media", // 急性中耳炎 H66.0x（不可用 acute otitis media→會落到 H65 漿液性/OME）
+  "ptx":"pneumothorax","htx":"hemothorax","vf":"ventricular fibrillation",
+  "ha":"headache","appy":"acute appendicitis","bppv":"benign paroxysmal vertigo",
+  "brbpr":"hemorrhage of anus and rectum","nv":"nausea vomiting",
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
 function norm(q){
   q = q.toLowerCase();
   q = q.replace(/[,;]?\s*(cause|focus|etiology)\s+(to\s+be\s+)?determin\w*/g," ");  // 剝「…cause to be determined」尾綴
+  q = q.replace(/\bn\s*\/\s*v\b/g," nausea vomiting ");   // n/v 在拆斜線前先展開，否則 v 會誤命中眼科 V pattern
   q = q.replace(/[,\.\(\)\/\-]/g," ").replace(/#/g," fracture ");   // 連字號也拆（covid-19→covid 19、a-v→a v）
   const parts = q.split(/\s+/).filter(Boolean);
   let out=[];
@@ -116,6 +123,13 @@ function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
 const PHRASE_CODE = {
   "nasal bleeding":["R04.0"],"nose bleeding":["R04.0"],"nosebleed":["R04.0"],"nose bleed":["R04.0"],
   "gum bleeding":["K06.8"],"gingival bleeding":["K06.8"],"bleeding gum":["K06.8"],"bleeding gums":["K06.8"],
+  // ask-all P0 臨床安全(2026-06-23)：純關鍵字排序救不了，強制置頂正確碼
+  "coma":["R40.20"],                               // 修：原本被 DKA(含 coma 字)蓋過
+  "stroke":["I63.9"],                              // 修：原本命中中風症候群/家族史，非腦梗塞
+  "overdose":["T50.901","T50.902"],               // 藥物中毒(意外+自傷，醫師自選意圖)
+  "drug overdose":["T50.901","T50.902"],
+  "unconscious":["R41.82"],"意識不清":["R41.82"],   // = AMS 精神狀態改變
+  "無力":["R53.1"],                                 // 修：原本命中重症肌無力/子宮無力
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
