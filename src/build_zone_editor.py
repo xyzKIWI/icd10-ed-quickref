@@ -20,9 +20,10 @@ zones_back  = json.loads((DESIGN / "zones_back.json").read_text(encoding="utf-8"
 
 # 部位中文名（與 build_figure.py 的 NAME 一致）
 PARTS = {
-    "head":"頭部","neck":"頸部","chest":"胸部","abdomen":"腹部","hip":"髖部",
+    "head":"頭部","face":"臉部","ear":"耳","neck":"頸部","chest":"胸部","abdomen":"腹部",
+    "hip":"髖部","pelvis":"骨盆",
     "shoulder":"肩部","upper_arm":"上臂","elbow":"肘部","forearm":"前臂","wrist":"手腕","hand":"手部",
-    "thigh":"大腿","knee":"膝部","lower_leg":"小腿","ankle":"腳踝","foot":"足部",
+    "thigh":"大腿","knee":"膝部","lower_leg":"小腿","ankle":"腳踝","foot":"足部","heel":"腳跟",
     "occiput":"後腦/枕部","upper_back":"上背/胸背","lower_back":"下背/腰","buttock":"臀部",
     "scapula":"肩胛","achilles":"跟腱",
 }

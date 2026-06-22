@@ -158,7 +158,7 @@ function indexEntry(e,kind){
   }
   return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh};
 }
-function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW){
+function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   let acc=0, anyMatch=false, polarityPen=0;   // acc = Σ best·idf（命中的資訊量）
   const hay=item.hay;
   for(let k=0;k<qtoks.length;k++){
@@ -194,7 +194,7 @@ function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW){
   if(!anyMatch) return 0;
   // 加權覆蓋率 ∈ [0,1]：命中的「資訊量」佔查詢總資訊量比例。只命中常用字→低→被濾掉
   let cov=(acc - polarityPen)/totalW;
-  if(cov<0.45) return 0;
+  if(cov<(covFloor==null?0.45:covFloor)) return 0;   // 小人圖(有 prefix 白名單)時放寬,不砍已鎖定碼段內的合法碼
   // 懲罰(0..1 尺度)：專一構造詞、generic metacarpal、未查左右
   let pen=0;
   for(const w of SPECIFIER){ if(hay.includes(" "+w+" ") && !qhas(qtoks,w)){ pen+=0.12; if(pen>=0.36)break; } }
@@ -270,7 +270,7 @@ function searchCore(IDX,q,scope,prefixes){
     if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
     let sc;
     if(hasText){
-      sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW);
+      sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,pf?0.05:undefined);
       if(sc>0 && item.e.b) sc*=1.4;       // 急診常見診斷加權
     }else{
       sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前

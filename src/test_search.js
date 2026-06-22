@@ -159,6 +159,14 @@ function prefixGuard(){
     ["大腳趾骨折只留 S92.4","great toe fracture",["S92.4"],["S92.4"],["S92.3","S92.5"]],
     ["頭皮撕裂只留 S01.0","scalp laceration",["S01.0"],["S01.0"],["S01.1","S01.2","S01.5"]],
     ["腳跟骨折只留 S92.0","calcaneus heel fracture",["S92.0"],["S92.0"],["S92.3","S92.4","S92.5"]],
+    // ask-all 小人圖對應表修正(2026-06-23)
+    ["踝骨折=內外踝(非S92足骨)","fracture ankle malleolus",["S82.5","S82.6","S82.8"],["S82"],["S92"]],
+    ["腕Colles=橈骨遠端","fracture lower end radius",["S52.5"],["S52.5"],["S62"]],
+    ["膝脛骨近端","fracture upper end tibia",["S82.1"],["S82.1"],["S82.0","S72"]],
+    ["膝股骨遠端","fracture lower end femur",["S72.4"],["S72.4"],["S82"]],
+    ["骨盆環(排除S32.0腰椎,非髖S72)","fracture pelvis sacrum coccyx pubis",["S32.1","S32.2","S32.3","S32.4","S32.5","S32.6","S32.7","S32.8","S32.9"],["S32"],["S72","S32.0"]],
+    ["臉撕裂有結果(非空)","laceration face",["S01"],["S01"],["S00","S02"]],
+    ["耳撕裂只留 S01.3","laceration ear",["S01.3"],["S01.3"],["S01.0","S01.1","S01.2"]],
   ];
   let okAll=true;
   for(const [label,q,prefixes,want,deny] of guards){
