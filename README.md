@@ -16,7 +16,8 @@
 查詢範例：
 - `contusion left forearm` → S50.12XA 左側前臂挫傷
 - `lt radial fx` → 左橈骨骨折候選（縮寫、拼錯字都能命中）
-- `GB stone` / `AGE` / `APN` → 縮寫展開後命中
+- `GB stone` / `AGE` / `APN` / `AoD` / `t2dm` / `ptb` → 縮寫展開後命中
+- `n/v` / `overdose` / `unconscious` → 急診慣用語直接帶出正確碼（R11.2／T50.90x 中毒／R41.82 AMS）
 - `abscess anus` → K61.0 肛門膿瘍（俗稱靠官方字母索引命中）
 - `頭部撕裂傷` / `前臂挫傷` → 中文也能查
 - `N20.1` / `N20` / `S50.12XA` → 代碼反查診斷
@@ -49,7 +50,8 @@
 - **搜尋精準度**：
   - **IDF 字詞權重**（上限 5.5）：罕見字主導、acute/unspecified 等常用字幾乎不計分 → 濾掉「只命中常用字」的洪水
   - **臨床安全懲罰**（硬約束）：極性相反（traumatic↔nontraumatic、displaced↔nondisplaced）score−0.9；專一構造詞（tendon/nerve/artery 未打出）懲罰；未查左右時帶側性的碼降權；急診沒查 chronic 時慢性碼降權（acute 優先）
-  - **PHRASE_CODE**：臨床慣用語直接置頂（nasal bleeding→R04.0、gum bleeding→K06.8…）
+  - **PHRASE_CODE**：臨床慣用語直接置頂（nasal bleeding→R04.0、coma→R40.20、stroke→I63.9、overdose→T50.90x、無力→R53.1、意識不清/unconscious→R41.82…）
+  - **ask-all 縮寫稽核（2026-06-23，Codex+Hermes 三方審）**：aod→主動脈剝離、aom→急性中耳炎、ptx/htx、vf、bppv、brbpr、appy、t1dm/t2dm、ptb 等；展開字串貼官方碼名（aod 用 dissection of aorta 而非 aortic dissection 以免混進腫瘤）；歧義過高者（ad/ap/ra/oa…）刻意不收
 - **效能**：38k 條目單次查詢約 40 ms（indexOf 快篩 + 閘門化模糊比對）。
 - **單檔內嵌**：資料、搜尋邏輯、兩張底圖（base64）全部內嵌進 HTML（file:// 下瀏覽器擋外部 JSON 的 CORS）。搜尋邏輯抽成 `search_core.js`，HTML 與測試共用同一份。
 
@@ -80,7 +82,7 @@ python3 src/build_figure.py    # zones json → 寫進 template.html 的兩個 S
 python3 src/build_html.py      # 注入 icd_data.json + search_core.js + 兩張底圖 base64 → dist/icd_ed.html
 
 # ── 4. 測試 ──────────────────────────────────────────────
-node src/test_search.js        # 78 案例 + 極性/側別/手指/prefix 守門，應全過
+node src/test_search.js        # 99 案例 + 極性/側別/手指/prefix 守門，應全過
 
 # ── 5. 上線（GitHub Pages）────────────────────────────────
 cp dist/icd_ed.html index.html
@@ -119,7 +121,7 @@ src/
   build_figure.py   zones json → 寫進 template.html 的 SVG（側別映射）
   template.html     UI（CSS + SVG 小人圖 + JS）
   build_html.py     注入資料 + 邏輯 + 底圖 base64 → dist/icd_ed.html
-  test_search.js    78 案例 + 守門函式
+  test_search.js    99 案例 + 守門函式
 design/
   chart_{front,back}_final.png   小人圖乾淨底圖（內嵌進成品）
   zones_{front,back}.json        熱區多邊形座標
