@@ -98,8 +98,12 @@ HTML = r"""<!DOCTYPE html>
       <div id="selInfo" class="hint">點圖上的區域來選取，或按「畫新區域」。</div>
       <div id="selEdit" style="display:none">
         <div class="row">
-          <label>部位</label>
+          <label>部位類別</label>
           <select id="selPart"></select>
+        </div>
+        <div class="row">
+          <label>自訂名稱</label>
+          <input id="selName" type="text" placeholder="可空白，留空用部位類別名" style="flex:1;min-width:140px">
         </div>
         <div class="row">
           <label>側別</label>
@@ -109,7 +113,7 @@ HTML = r"""<!DOCTYPE html>
             <option value="L">L（圖的左半邊）</option>
           </select>
         </div>
-        <div class="hint">拖白色圓點＝移動頂點；<kbd>雙擊</kbd>白點＝刪除該頂點（保留 ≥3 點）。</div>
+        <div class="hint">拖<b>區域內部</b>＝整塊移動；拖<b>白色圓點</b>＝移動單一頂點；<kbd>雙擊</kbd>白點＝刪除該頂點（保留 ≥3 點）。</div>
       </div>
     </div>
 
@@ -168,13 +172,14 @@ function render(){
     const pg=document.createElementNS("http://www.w3.org/2000/svg","polygon");
     pg.setAttribute("points",z.points.map(p=>p.join(",")).join(" "));
     pg.setAttribute("class","zone"+(i===sel?" sel":""));
-    pg.addEventListener("mousedown",e=>{if(mode==="edit"){e.stopPropagation();selectZone(i);}});
+    pg.addEventListener("mousedown",e=>{if(mode==="edit"){e.stopPropagation();if(i!==sel)selectZone(i);
+      drag={move:true,start:svgPt(e),orig:DATA[view][i].points.map(p=>p.slice())};}});
     gZones.appendChild(pg);
     // label at centroid
     const c=centroid(z.points);
     const t=document.createElementNS("http://www.w3.org/2000/svg","text");
     t.setAttribute("x",c[0]);t.setAttribute("y",c[1]);t.setAttribute("class","lbl");t.setAttribute("text-anchor","middle");
-    t.textContent=(z.side?z.side+" ":"")+(PARTNAMES[z.part]||z.part);
+    t.textContent=(z.side?z.side+" ":"")+(z.name||PARTNAMES[z.part]||z.part);
     gZones.appendChild(t);
   });
   // vertices of selected
@@ -207,6 +212,7 @@ function selectZone(i){
   document.getElementById("selInfo").style.display="none";
   document.getElementById("selEdit").style.display="block";
   selPart.value=z.part; document.getElementById("selSide").value=z.side||"";
+  document.getElementById("selName").value=z.name||"";
   document.getElementById("bDelZone").disabled=false;
   render();
 }
@@ -216,6 +222,10 @@ function delVertex(vi){const z=DATA[view][sel];if(z.points.length<=3){alert("至
 
 selPart.addEventListener("change",()=>{if(sel!=null)DATA[view][sel].part=selPart.value;render();});
 document.getElementById("selSide").addEventListener("change",e=>{if(sel!=null)DATA[view][sel].side=e.target.value;render();});
+document.getElementById("selName").addEventListener("input",e=>{
+  if(sel==null)return; const v=e.target.value.trim();
+  if(v)DATA[view][sel].name=v; else delete DATA[view][sel].name; render();
+});
 
 // SVG 互動
 svg.addEventListener("mousedown",e=>{
@@ -223,7 +233,14 @@ svg.addEventListener("mousedown",e=>{
   else{deselect();}
 });
 svg.addEventListener("mousemove",e=>{
-  if(drag&&sel!=null){DATA[view][sel].points[drag.vi]=svgPt(e);render();}
+  if(!drag||sel==null)return;
+  const cur=svgPt(e);
+  if(drag.vi!=null){DATA[view][sel].points[drag.vi]=cur;render();}
+  else if(drag.move){
+    const dx=cur[0]-drag.start[0], dy=cur[1]-drag.start[1];
+    DATA[view][sel].points=drag.orig.map(p=>[Math.round((p[0]+dx)*10)/10,Math.round((p[1]+dy)*10)/10]);
+    render();
+  }
 });
 window.addEventListener("mouseup",()=>{drag=null;});
 
@@ -241,7 +258,8 @@ document.getElementById("bFinish").onclick=()=>{
   if(draft.length<3){alert("至少點 3 個點");return;}
   DATA[view].push({part:"head",side:"",points:draft.slice()});
   const ni=DATA[view].length-1; setMode("edit"); selectZone(ni);
-  alert("已新增區域，請在右側選好「部位」和「側別」");
+  const n=document.getElementById("selName"); n.focus();
+  status("已新增 → 右側選「部位類別」＋打「自訂名稱」");
 };
 
 // 視圖切換
