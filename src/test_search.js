@@ -96,6 +96,7 @@ const cases = [
   ["overdose","T50.90"],["drug overdose","T50.90"],
   ["unconscious","R41.82"],["意識不清","R41.82"],  // = AMS
   ["無力","R53.1"],
+  ["t1dm","E10"],["t2dm","E11"],["ptb","A15.0"],
   // 臨床回饋修正(2026-06-22)
   ["nasal bleeding","R04.0"],
   ["gum bleeding","K06.8"],

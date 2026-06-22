@@ -59,6 +59,7 @@ const ABBR = {
   "ptx":"pneumothorax","htx":"hemothorax","vf":"ventricular fibrillation",
   "ha":"headache","appy":"acute appendicitis","bppv":"benign paroxysmal vertigo",
   "brbpr":"hemorrhage of anus and rectum","nv":"nausea vomiting",
+  "t1dm":"type 1 diabetes","t2dm":"type 2 diabetes","ptb":"pulmonary tuberculosis",  // 2026-06-23 補
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
@@ -256,7 +257,7 @@ function codeSearch(IDX,q,scope){
 function searchCore(IDX,q,scope,prefixes){
   const pf = (prefixes && prefixes.length) ? prefixes : null;
   if(!q.trim() && !pf) return [];
-  if(!pf && isCodeQuery(q)) return codeSearch(IDX,q,scope);
+  if(!pf && isCodeQuery(q) && !ABBR[q.trim().toLowerCase()]) return codeSearch(IDX,q,scope);  // 整串是已知縮寫(t1dm/t2dm)→走文字搜尋,別誤判成代碼反查
   ensureDF(IDX);
   const qtoks=norm(q), cjk=hasCJK(q);
   const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
