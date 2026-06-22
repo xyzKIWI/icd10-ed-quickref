@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 TPL = ROOT/"src"/"template.html"
 
 NAME = {"head":"頭部","neck":"頸部","chest":"胸部","abdomen":"腹部","hip":"髖部",
- "shoulder":"肩部","upper_arm":"上臂","elbow":"肘部","forearm":"前臂","hand":"手部",
- "thigh":"大腿","knee":"膝部","lower_leg":"小腿","foot":"足部",
+ "shoulder":"肩部","upper_arm":"上臂","elbow":"肘部","forearm":"前臂","wrist":"手腕","hand":"手部",
+ "thigh":"大腿","knee":"膝部","lower_leg":"小腿","ankle":"腳踝","foot":"足部",
  "occiput":"後腦/枕部","upper_back":"上背/胸背","lower_back":"下背/腰","buttock":"臀部",
  "scapula":"肩胛","achilles":"跟腱"}
 # 影像 R/L → 解剖 data-side
