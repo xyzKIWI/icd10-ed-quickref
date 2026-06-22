@@ -109,12 +109,11 @@
   .seg button{border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--sub);padding:7px 10px;font-size:12px;cursor:pointer}
   .seg button.on{background:var(--active);border-color:var(--accent);color:var(--activeTxt);font-weight:700}
   .figure-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-  .figure-pane{border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;min-width:0}
-  .pane-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 2px 4px;
-        color:var(--sub);font-size:11px;font-weight:700}
-  .pane-title{justify-self:center}
-  .side-l{justify-self:start;font-size:14px;font-weight:800;color:var(--accent)}
-  .side-r{justify-self:end;font-size:14px;font-weight:800;color:var(--accent)}
+  .figure-pane{position:relative;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;min-width:0}
+  .pane-top{text-align:center;margin:0 2px 4px;color:var(--sub);font-size:11px;font-weight:700}
+  .side-l,.side-r{position:absolute;top:50%;transform:translateY(-50%);color:var(--sub);font-size:11px;font-weight:700;pointer-events:none}
+  .side-l{left:5px}
+  .side-r{right:5px}
   .figure-title,.body-label{display:none}
   .body-svg{width:100%;height:auto;aspect-ratio:724/1086;display:block;overflow:hidden}
   .body-line{fill:var(--body-fill);stroke:var(--body-line);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
@@ -199,7 +198,8 @@
     </div>
     <div class="figure-grid">
       <div class="figure-pane">
-        <div class="pane-top"><span class="side-l">Rt</span><span class="pane-title">Front</span><span class="side-r">Lt</span></div>
+        <span class="side-l">Rt</span><span class="side-r">Lt</span>
+        <div class="pane-top"><span class="pane-title">Front</span></div>
         <svg class="body-svg" viewBox="0 0 724 1086" role="img" aria-label="Body front">
           <image href="/*FRONT_IMG*/" x="0" y="0" width="724" height="1086" preserveAspectRatio="xMidYMid meet" pointer-events="none"></image>
           <polygon class="zone" data-part="head" data-side="" points="341.3,108.6 320.6,137.9 320.6,231.0 444.7,231.0 444.7,134.5 436.1,117.2 422.3,108.6"><title>頭部</title></polygon>
@@ -225,10 +225,12 @@
           <polygon class="zone" data-part="lower_leg" data-side="left" points="387.9,875.7 387.9,977.4 449.9,977.4 449.9,875.7"><title>左小腿</title></polygon>
           <polygon class="zone" data-part="foot" data-side="right" points="301.7,977.4 301.7,1008.4 310.3,1008.4 315.5,1013.6 384.4,1013.6 384.4,977.4"><title>右足部</title></polygon>
           <polygon class="zone" data-part="foot" data-side="left" points="382.7,977.4 382.7,1013.6 439.6,1013.6 449.9,1008.4 465.4,1008.4 467.2,977.4"><title>左足部</title></polygon>
+
         </svg>
       </div>
       <div class="figure-pane">
-        <div class="pane-top"><span class="side-l">Lt</span><span class="pane-title">Back</span><span class="side-r">Rt</span></div>
+        <span class="side-l">Lt</span><span class="side-r">Rt</span>
+        <div class="pane-top"><span class="pane-title">Back</span></div>
         <svg class="body-svg" viewBox="0 0 724 1086" role="img" aria-label="Body back">
           <image href="/*BACK_IMG*/" x="0" y="0" width="724" height="1086" preserveAspectRatio="xMidYMid meet" pointer-events="none"></image>
           <polygon class="zone" data-part="occiput" data-side="" points="262.0,120.7 258.6,234.4 382.7,234.4 382.7,125.8 367.2,110.3 275.8,110.3"><title>後腦/枕部</title></polygon>
@@ -236,28 +238,29 @@
           <polygon class="zone" data-part="upper_back" data-side="" points="251.7,281.0 227.5,325.8 227.5,458.5 413.7,458.5 413.7,303.4 393.0,296.5 389.6,281.0"><title>上背/胸背</title></polygon>
           <polygon class="zone" data-part="lower_back" data-side="" points="237.9,458.5 237.9,580.9 403.4,580.9 403.4,458.5"><title>下背/腰</title></polygon>
           <polygon class="zone" data-part="buttock" data-side="" points="246.5,580.9 246.5,670.6 403.4,670.6 403.4,580.9"><title>臀部</title></polygon>
-          <polygon class="zone" data-part="scapula" data-side="left" points="237.9,299.9 237.9,391.3 320.6,391.3 320.6,299.9"><title>右肩胛</title></polygon>
-          <polygon class="zone" data-part="scapula" data-side="right" points="320.6,299.9 320.6,391.3 405.1,391.3 405.1,299.9"><title>左肩胛</title></polygon>
-          <polygon class="zone" data-part="shoulder" data-side="left" points="253.4,275.8 251.7,291.3 246.5,293.0 244.8,298.2 234.4,301.7 232.7,325.8 189.6,327.5 253.4,327.5"><title>右肩部</title></polygon>
-          <polygon class="zone" data-part="shoulder" data-side="right" points="387.9,275.8 387.9,327.5 441.3,327.5 436.1,320.6 436.1,315.5 431.0,315.5 410.3,301.7 393.0,296.5 389.6,293.0"><title>左肩部</title></polygon>
-          <polygon class="zone" data-part="upper_arm" data-side="left" points="186.2,325.8 186.2,384.4 172.4,441.3 225.8,441.3 225.8,325.8"><title>右上臂</title></polygon>
-          <polygon class="zone" data-part="upper_arm" data-side="right" points="415.4,305.1 415.4,441.3 468.9,441.3 449.9,331.0 443.0,331.0 436.1,315.5"><title>左上臂</title></polygon>
-          <polygon class="zone" data-part="elbow" data-side="left" points="172.4,439.6 167.2,470.6 162.0,474.0 162.0,482.7 158.6,484.4 205.1,484.4 205.1,439.6"><title>右肘部</title></polygon>
-          <polygon class="zone" data-part="elbow" data-side="right" points="434.4,439.6 434.4,484.4 480.9,484.4 480.9,475.8 472.3,465.4 468.9,439.6"><title>左肘部</title></polygon>
-          <polygon class="zone" data-part="forearm" data-side="left" points="194.8,482.7 158.6,484.4 139.6,582.6 125.8,591.3 125.8,599.9 194.8,599.9"><title>右前臂</title></polygon>
-          <polygon class="zone" data-part="forearm" data-side="right" points="444.7,482.7 444.7,599.9 515.4,599.9 515.4,591.3 503.4,584.4 494.7,562.0 480.9,482.7"><title>左前臂</title></polygon>
-          <polygon class="zone" data-part="hand" data-side="left" points="112.0,608.5 108.6,637.8 117.2,639.5 117.2,674.0 132.7,680.9 200.0,680.9 200.0,596.4 125.8,596.4"><title>右手部</title></polygon>
-          <polygon class="zone" data-part="hand" data-side="right" points="441.3,596.4 441.3,680.9 506.8,682.6 520.6,672.3 524.0,639.5 532.7,634.4 532.7,624.0 518.9,596.4"><title>左手部</title></polygon>
-          <polygon class="zone" data-part="thigh" data-side="left" points="244.8,670.6 244.8,824.0 320.6,824.0 320.6,670.6"><title>右大腿</title></polygon>
-          <polygon class="zone" data-part="thigh" data-side="right" points="320.6,670.6 320.6,824.0 396.5,824.0 396.5,670.6"><title>左大腿</title></polygon>
-          <polygon class="zone" data-part="knee" data-side="left" points="251.7,824.0 251.7,875.7 318.9,875.7 318.9,824.0"><title>右膝部</title></polygon>
-          <polygon class="zone" data-part="knee" data-side="right" points="322.4,824.0 322.4,875.7 391.3,875.7 391.3,824.0"><title>左膝部</title></polygon>
-          <polygon class="zone" data-part="lower_leg" data-side="left" points="255.1,875.7 255.1,963.6 317.2,963.6 317.2,875.7"><title>右小腿</title></polygon>
-          <polygon class="zone" data-part="lower_leg" data-side="right" points="325.8,875.7 325.8,963.6 387.9,963.6 387.9,875.7"><title>左小腿</title></polygon>
-          <polygon class="zone" data-part="achilles" data-side="left" points="258.6,944.6 258.6,999.8 308.6,999.8 308.6,944.6"><title>右跟腱</title></polygon>
-          <polygon class="zone" data-part="achilles" data-side="right" points="332.7,944.6 332.7,999.8 382.7,999.8 382.7,944.6"><title>左跟腱</title></polygon>
-          <polygon class="zone" data-part="foot" data-side="left" points="241.3,994.6 241.3,1003.3 260.3,1008.4 282.7,1008.4 286.2,1005.0 322.4,1005.0 322.4,994.6"><title>右足部</title></polygon>
-          <polygon class="zone" data-part="foot" data-side="right" points="320.6,994.6 320.6,1005.0 355.1,1005.0 362.0,1008.4 377.5,1008.4 403.4,999.8 403.4,994.6"><title>左足部</title></polygon>
+          <polygon class="zone" data-part="scapula" data-side="left" points="237.9,299.9 237.9,391.3 320.6,391.3 320.6,299.9"><title>左肩胛</title></polygon>
+          <polygon class="zone" data-part="scapula" data-side="right" points="320.6,299.9 320.6,391.3 405.1,391.3 405.1,299.9"><title>右肩胛</title></polygon>
+          <polygon class="zone" data-part="shoulder" data-side="left" points="256.8,270.6 251.7,270.6 251.7,291.3 234.4,301.7 232.7,325.8 186.2,325.8 186.2,337.9 256.8,337.9"><title>左肩部</title></polygon>
+          <polygon class="zone" data-part="shoulder" data-side="right" points="382.7,270.6 382.7,337.9 449.9,337.9 449.9,331.0 441.3,329.2 436.1,315.5 389.6,293.0 389.6,270.6"><title>右肩部</title></polygon>
+          <polygon class="zone" data-part="upper_arm" data-side="left" points="186.2,325.8 186.2,384.4 172.4,441.3 227.5,441.3 227.5,325.8"><title>左上臂</title></polygon>
+          <polygon class="zone" data-part="upper_arm" data-side="right" points="413.7,303.4 413.7,441.3 468.9,441.3 449.9,331.0 443.0,331.0 436.1,315.5"><title>右上臂</title></polygon>
+          <polygon class="zone" data-part="elbow" data-side="left" points="172.4,439.6 167.2,470.6 162.0,474.0 162.0,482.7 158.6,484.4 205.1,484.4 205.1,439.6"><title>左肘部</title></polygon>
+          <polygon class="zone" data-part="elbow" data-side="right" points="434.4,439.6 434.4,484.4 480.9,484.4 480.9,475.8 472.3,465.4 468.9,439.6"><title>右肘部</title></polygon>
+          <polygon class="zone" data-part="forearm" data-side="left" points="194.8,482.7 158.6,484.4 139.6,582.6 125.8,591.3 125.8,599.9 194.8,599.9"><title>左前臂</title></polygon>
+          <polygon class="zone" data-part="forearm" data-side="right" points="444.7,482.7 444.7,599.9 515.4,599.9 515.4,591.3 503.4,584.4 494.7,562.0 480.9,482.7"><title>右前臂</title></polygon>
+          <polygon class="zone" data-part="hand" data-side="left" points="112.0,608.5 108.6,637.8 117.2,639.5 117.2,674.0 132.7,680.9 200.0,680.9 200.0,596.4 125.8,596.4"><title>左手部</title></polygon>
+          <polygon class="zone" data-part="hand" data-side="right" points="441.3,596.4 441.3,680.9 506.8,682.6 520.6,672.3 524.0,639.5 532.7,634.4 532.7,624.0 518.9,596.4"><title>右手部</title></polygon>
+          <polygon class="zone" data-part="thigh" data-side="left" points="244.8,670.6 244.8,824.0 320.6,824.0 320.6,670.6"><title>左大腿</title></polygon>
+          <polygon class="zone" data-part="thigh" data-side="right" points="320.6,670.6 320.6,824.0 396.5,824.0 396.5,670.6"><title>右大腿</title></polygon>
+          <polygon class="zone" data-part="knee" data-side="left" points="251.7,824.0 251.7,875.7 318.9,875.7 318.9,824.0"><title>左膝部</title></polygon>
+          <polygon class="zone" data-part="knee" data-side="right" points="322.4,824.0 322.4,875.7 391.3,875.7 391.3,824.0"><title>右膝部</title></polygon>
+          <polygon class="zone" data-part="lower_leg" data-side="left" points="255.1,875.7 255.1,963.6 317.2,963.6 317.2,875.7"><title>左小腿</title></polygon>
+          <polygon class="zone" data-part="lower_leg" data-side="right" points="325.8,875.7 325.8,963.6 387.9,963.6 387.9,875.7"><title>右小腿</title></polygon>
+          <polygon class="zone" data-part="achilles" data-side="left" points="258.6,944.6 258.6,999.8 308.6,999.8 308.6,944.6"><title>左跟腱</title></polygon>
+          <polygon class="zone" data-part="achilles" data-side="right" points="332.7,944.6 332.7,999.8 382.7,999.8 382.7,944.6"><title>右跟腱</title></polygon>
+          <polygon class="zone" data-part="foot" data-side="left" points="241.3,994.6 241.3,1003.3 260.3,1008.4 282.7,1008.4 286.2,1005.0 322.4,1005.0 322.4,994.6"><title>左足部</title></polygon>
+          <polygon class="zone" data-part="foot" data-side="right" points="320.6,994.6 320.6,1005.0 355.1,1005.0 362.0,1008.4 377.5,1008.4 403.4,999.8 403.4,994.6"><title>右足部</title></polygon>
+
         </svg>
       </div>
     </div>
