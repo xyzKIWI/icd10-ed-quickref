@@ -67,6 +67,8 @@
   .kmu b{color:var(--warn)}
   .fbpanel{display:none;margin-top:9px;padding:10px;border:1px solid var(--accent);border-radius:10px;background:var(--panel)}
   .fbpanel.show{display:block}
+  .fbhint{color:var(--sub);font-size:12px;line-height:1.55;margin:0 2px 8px}
+  .fbhint b{color:var(--txt);font-weight:600}
   .fbpanel textarea{width:100%;font-size:14px;padding:8px;border-radius:8px;border:1px solid var(--line);
         background:var(--field);color:var(--txt);resize:vertical;font-family:inherit}
   .fbrow{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap}
@@ -164,6 +166,7 @@
     <button data-s="dx">一般診斷</button>
   </div>
   <div class="fbpanel" id="fbPanel">
+    <div class="fbhint">查不到、排序怪怪的、或缺哪個縮寫？打一句告訴我們，會自動帶上你剛打的關鍵字，送出後彙整改進。<br>例：<b>查「AUR」尿滯留沒排第一</b> ／ <b>nasal bleeding 找不到流鼻血</b> ／ <b>沒有「OHCA」這個縮寫</b></div>
     <textarea id="fbText" rows="2" placeholder="這次搜尋哪裡不對？(例：nasal bleeding 找不到 epistaxis)。會自動帶上你剛打的關鍵字，送出後集中彙整。"></textarea>
     <div class="fbrow">
       <button class="fbsave" id="fbSave" type="button">記下這筆</button>
