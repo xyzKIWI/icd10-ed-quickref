@@ -164,7 +164,7 @@
     <button data-s="dx">一般診斷</button>
   </div>
   <div class="fbpanel" id="fbPanel">
-    <textarea id="fbText" rows="2" placeholder="這次搜尋哪裡不對？(例：nasal bleeding 找不到 epistaxis)。會自動記下你剛打的關鍵字。"></textarea>
+    <textarea id="fbText" rows="2" placeholder="這次搜尋哪裡不對？(例：nasal bleeding 找不到 epistaxis)。會自動帶上你剛打的關鍵字，送出後集中彙整。"></textarea>
     <div class="fbrow">
       <button class="fbsave" id="fbSave" type="button">記下這筆</button>
       <button class="fbview" id="fbCopy" type="button">複製全部回饋</button>
@@ -431,7 +431,12 @@ const kmuTog=document.getElementById("kmuTog");
 kmuTog.checked=kmuMode;
 kmuTog.onchange=()=>{ kmuMode=kmuTog.checked; try{localStorage.setItem("kmu",kmuMode?"1":"0");}catch(e){} };
 
-// ===== 臨床回饋記錄（存 localStorage，可累積後複製給開發者調整）=====
+// ===== 臨床回饋記錄（送共用 Google 表單 → Sheet 集中彙整，localStorage 作離線備援）=====
+const FB_FORM="https://docs.google.com/forms/d/e/1FAIpQLSeGbSAsVojnBw67MvWjOcpyZcQUzcfNURqGohQ8uUuboh8fgg/formResponse";
+const FB_ENTRY="entry.248204705";
+function fbSend(text){   // 背景送出，no-cors fire-and-forget；失敗不影響本機備援
+  try{ fetch(FB_FORM,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:FB_ENTRY+"="+encodeURIComponent(text)}); }catch(e){}
+}
 function fbLoad(){ try{return JSON.parse(localStorage.getItem("fb")||"[]");}catch(e){return [];} }
 function fbCountUpdate(){ const n=fbLoad().length; document.getElementById("fbCount").textContent = n?("已記 "+n+" 筆"):""; }
 const fbPanel=document.getElementById("fbPanel"), fbText=document.getElementById("fbText");
@@ -443,8 +448,9 @@ document.getElementById("fbSave").onclick=()=>{
   const d=new Date(); const ts=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   list.push({t:ts, q:q, note:note});
   try{ localStorage.setItem("fb",JSON.stringify(list)); }catch(e){}
+  fbSend(q ? `查「${q}」：${note||"(無備註)"}` : note);   // 同步送共用表單，日期由表單時間戳記
   fbText.value=""; fbCountUpdate();
-  const b=document.getElementById("fbSave"); b.textContent="✓ 已記下"; setTimeout(()=>b.textContent="記下這筆",1200);
+  const b=document.getElementById("fbSave"); b.textContent="✓ 已送出"; setTimeout(()=>b.textContent="記下這筆",1200);
 };
 document.getElementById("fbCopy").onclick=()=>{
   const list=fbLoad();

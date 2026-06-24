@@ -131,6 +131,7 @@ const PHRASE_CODE = {
   "drug overdose":["T50.901","T50.902"],
   "unconscious":["R41.82"],"意識不清":["R41.82"],   // = AMS 精神狀態改變
   "無力":["R53.1"],                                 // 修：原本命中重症肌無力/子宮無力
+  "aur":["R33.9"],                                  // 尿滯留：unspecified 置頂(原 R33.0 藥物導致排前)
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
