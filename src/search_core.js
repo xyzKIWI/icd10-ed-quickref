@@ -16,7 +16,7 @@ const SYN = {
   "collarbone":"clavicle",
   "stone":"calculus","stones":"calculus","calculi":"calculus",   // 結石：官方用 calculus
   "renal":"kidney","ureteral":"ureter","urethral":"urethra",
-  "dizzy":"dizziness","epigastralgia":"epigastric pain","fb":"foreign body",   // 真實病歷常見措辭
+  "dizzy":"dizziness","epigastralgia":"epigastric pain","fb":"foreign body",   // 急診常見措辭
   "sting":"venom","stung":"venom",   // 叮咬：官方碼名用 venom（蜂螫 bee sting→venom of bees）
   // 結膜出血：官方碼名用 conjunctival，sub- 前綴與少 c 的 typo 都導過去
   "subconjunctival":"conjunctival","subconjunctiva":"conjunctival","conjunctiva":"conjunctival",
@@ -48,7 +48,7 @@ const ABBR = {
   "dm":"diabetes","dka":"diabetes ketoacidosis","hhs":"hyperosmolar hyperglycemia",
   "ckd":"chronic kidney","aki":"acute kidney failure","esrd":"end stage renal","arf":"acute kidney failure",
   "bph":"benign prostatic hyperplasia","pid":"pelvic inflammatory","cp":"chest pain","abd":"abdominal",
-  // 由真實 KMUH 急診病歷高頻縮寫補入
+  // 急診高頻縮寫補入
   "age":"gastroenteritis","pn":"pneumonia","ugi":"upper gastrointestinal",
   "aur":"retention urine","apn":"acute pyelonephritis","lbp":"low back pain",
   "ohca":"cardiac arrest","psvt":"supraventricular tachycardia","vt":"ventricular tachycardia",

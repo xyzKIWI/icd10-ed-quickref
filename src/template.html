@@ -62,9 +62,9 @@
   .recent-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 8px}
   .rchip{font-size:13px;padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);
         color:var(--code);font-family:ui-monospace,monospace;cursor:pointer}
-  .kmu{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;color:var(--sub);cursor:pointer;user-select:none}
-  .kmu input{width:16px;height:16px;accent-color:var(--accent)}
-  .kmu b{color:var(--warn)}
+  .dotopt{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12.5px;color:var(--sub);cursor:pointer;user-select:none}
+  .dotopt input{width:16px;height:16px;accent-color:var(--accent)}
+  .dotopt b{color:var(--warn)}
   .fbpanel{display:none;margin-top:9px;padding:10px;border:1px solid var(--accent);border-radius:10px;background:var(--panel)}
   .fbpanel.show{display:block}
   .fbhint{color:var(--sub);font-size:12px;line-height:1.55;margin:0 2px 8px}
@@ -176,7 +176,7 @@
     </div>
   </div>
   <div class="hint">支援英文/中文、縮寫(fx, lac, lt/rt)、拼錯字也能命中。點整個框框即複製代碼。</div>
-  <label class="kmu"><input type="checkbox" id="kmuTog"> <span><b>高醫模式</b>：複製時去掉小數點</span></label>
+  <label class="dotopt"><input type="checkbox" id="dotTog"> <span><b>去小數點</b>：複製時不含小數點（N20.0→N200）</span></label>
 </header>
 <main>
   <section class="trauma" aria-label="外傷小人圖">
@@ -281,7 +281,7 @@
   <div id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></div>
 </main>
 <div class="disclaimer">
-  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以院內正式系統及醫師專業判斷為準；本工具不蒐集任何輸入內容（純離線/前端運算），開發者不對因使用本工具所生之任何後果負責。
+  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以正式編碼系統及醫療專業判斷為準；一般查詢純前端運算、不上傳，僅使用者主動送出回饋時會送出該次關鍵字與備註，不蒐集其他輸入內容。開發者不對因使用本工具所生之任何後果負責。
 </div>
 <footer id="ver"></footer>
 
@@ -344,7 +344,7 @@ function pick(i,ch){
   document.getElementById("zh"+i).textContent=variantZh(e,ch);
   card.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.textContent.trim().startsWith(ch+" ")||c.textContent.trim()===ch));
 }
-function fmtCode(c){ return kmuMode ? c.replace(/\./g,"") : c; }   // 高醫模式去小數點
+function fmtCode(c){ return noDot ? c.replace(/\./g,"") : c; }   // 去小數點模式
 function cardCopy(i){
   const el=document.getElementById("code"+i);
   const out=fmtCode(el.dataset.code);
@@ -358,7 +358,7 @@ function cardCopy(i){
 }
 
 // ===== 多碼籃（本次診斷，一鍵複製整段）=====
-let basket=[];   // {code, zh}（存原始含點碼，複製時才依高醫模式格式化）
+let basket=[];   // {code, zh}（存原始含點碼，複製時才依去小數點模式格式化）
 function addToBasket(i){
   const code=document.getElementById("code"+i).dataset.code;
   const zh=document.getElementById("zh"+i).textContent;
@@ -379,7 +379,7 @@ function renderBasket(){
   document.getElementById("basketCopy").textContent="複製全部 ("+basket.length+")";
 }
 function copyBasket(){
-  const text=basket.map(b=>fmtCode(b.code)+"  "+b.zh).join("\n");   // 每行：碼 + 中文，貼病歷用
+  const text=basket.map(b=>fmtCode(b.code)+"  "+b.zh).join("\n");   // 每行：碼 + 中文
   navigator.clipboard?.writeText(text);
   const btn=document.getElementById("basketCopy");
   btn.textContent="✓ 已複製 "+basket.length+" 碼";
@@ -428,11 +428,11 @@ document.getElementById("themeBtn").onclick=()=>{
   applyTheme();
 };
 
-let kmuMode = false;
-try{ kmuMode = localStorage.getItem("kmu")==="1"; }catch(e){}
-const kmuTog=document.getElementById("kmuTog");
-kmuTog.checked=kmuMode;
-kmuTog.onchange=()=>{ kmuMode=kmuTog.checked; try{localStorage.setItem("kmu",kmuMode?"1":"0");}catch(e){} };
+let noDot = true;   // 預設開啟：複製時去掉小數點
+try{ noDot = localStorage.getItem("nodot")!=="0"; }catch(e){}
+const dotTog=document.getElementById("dotTog");
+dotTog.checked=noDot;
+dotTog.onchange=()=>{ noDot=dotTog.checked; try{localStorage.setItem("nodot",noDot?"1":"0");}catch(e){} };
 
 // ===== 臨床回饋記錄（送共用 Google 表單 → Sheet 集中彙整，localStorage 作離線備援）=====
 const FB_FORM="https://docs.google.com/forms/d/e/1FAIpQLSeGbSAsVojnBw67MvWjOcpyZcQUzcfNURqGohQ8uUuboh8fgg/formResponse";

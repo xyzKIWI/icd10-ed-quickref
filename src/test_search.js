@@ -1,4 +1,4 @@
-// 驗證搜尋核心 + 效能：跑 Kiwi 的真實查詢案例
+// 驗證搜尋核心 + 效能：跑急診常見查詢案例
 const fs = require("fs"), path = require("path");
 const C = require("./search_core.js");
 const DB = JSON.parse(fs.readFileSync(path.join(__dirname,"../build/icd_data.json"),"utf8"));
@@ -72,7 +72,7 @@ const cases = [
   ["metatarsal fracture","S92.3"],
   ["great toe fracture","S92.4"],
   ["lesser toe fracture","S92.5"],
-  // 真實 KMUH 急診措辭（縮寫/尾綴/連字號）
+  // 急診常見措辭（縮寫/尾綴/連字號）
   ["pn","J18"],
   ["ugi bleeding","K92"],
   ["covid-19","U07.1"],
