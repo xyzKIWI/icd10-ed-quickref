@@ -60,6 +60,7 @@ const ABBR = {
   "ha":"headache","appy":"acute appendicitis","bppv":"benign paroxysmal vertigo",
   "brbpr":"hemorrhage of anus and rectum","nv":"nausea vomiting",
   "t1dm":"type 1 diabetes","t2dm":"type 2 diabetes","ptb":"pulmonary tuberculosis",  // 2026-06-23 補
+  "ihca":"cardiac arrest","bzd":"benzodiazepine",   // 2026-06-27 回饋補
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
@@ -132,6 +133,11 @@ const PHRASE_CODE = {
   "unconscious":["R41.82"],"意識不清":["R41.82"],   // = AMS 精神狀態改變
   "無力":["R53.1"],                                 // 修：原本命中重症肌無力/子宮無力
   "aur":["R33.9"],                                  // 尿滯留：unspecified 置頂(原 R33.0 藥物導致排前)
+  // 臨床回饋(2026-06-27)：強制置頂正確碼
+  "bzd overdose":["T42.4X2","T42.4X1","T42.4X4","T42.4X3"],  // BZD 中毒：X2 自傷置頂，並列出意外/未定/攻擊供選意圖
+  "ihca":["I46.9"],                                 // 院內心跳停止：cause unspecified 置頂
+  "contusion chest":["S20.20"],                     // 胸部挫傷：原跑出胸痛 R07
+  "urticaria":["L50.9"],                            // 蕁麻疹：unspecified 置頂(原過敏性 L50.0 排前)
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
