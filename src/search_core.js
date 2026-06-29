@@ -138,6 +138,11 @@ const PHRASE_CODE = {
   "ihca":["I46.9"],                                 // 院內心跳停止：cause unspecified 置頂
   "contusion chest":["S20.20"],                     // 胸部挫傷：原跑出胸痛 R07
   "urticaria":["L50.9"],                            // 蕁麻疹：unspecified 置頂(原過敏性 L50.0 排前)
+  // 臨床回饋(2026-06-29)：強制置頂正確碼
+  "face laceration":["S01.81","S01.419","S01.511"], // 臉部撕裂傷：無單一「臉」碼，列其他部位NOS+臉頰+嘴唇供選(原跑出惡性腫瘤)
+  "herpes zoster":["B02.9","B02.8"],                // 帶狀疱疹：無併發症/其他併發症置頂(原 B02.39 眼部排前)
+  "zoster":["B02.9","B02.8"],
+  "numbness":["R20.0","R20.2"],                     // 麻木：皮膚感覺缺失/感覺異常置頂(原跑出免疫缺乏症)
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
