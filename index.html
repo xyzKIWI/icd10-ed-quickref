@@ -132,8 +132,11 @@
   .multi.hide{display:none}
   .multi-title{font-size:12.5px;color:var(--sub);margin-bottom:6px}
   .multi-title b{color:var(--txt)}
-  .multi-row{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13px;border-bottom:1px dashed var(--line)}
+  .multi-row{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;border-bottom:1px dashed var(--line);cursor:pointer;border-radius:6px}
+  .multi-row:hover{background:var(--card)}
+  .multi-row:hover .mcode{text-decoration:underline}
   .multi-row:last-of-type{border-bottom:none}
+  .multi-row .mok{color:var(--accent);font-size:12px;font-weight:700;white-space:nowrap}
   .multi-row .mlabel{color:var(--sub);white-space:nowrap}
   .multi-row .mcode{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   .multi-row .mzh{flex:1;color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -289,7 +292,7 @@
       </div>
     </div>
     <div class="multi hide" id="multiPanel">
-      <div class="multi-title"><b>多部位清單</b>：點小人圖累積部位（再點一次取消），共用上方傷型</div>
+      <div class="multi-title"><b>多部位清單</b>：點小人圖累積部位（再點一次取消），共用上方傷型；點列可複製單碼</div>
       <div id="multiList"></div>
       <div class="multi-actions">
         <button type="button" id="multiAddAll">➕ 全部加入清單</button>
@@ -1312,8 +1315,19 @@ function renderMulti(){
     const body=sug
       ? `<span class="mcode">${fmtCode(sug.code)}</span><span class="mzh">${sug.zh}</span>`
       : `<span class="mzh">此部位無「${INJURY_LABEL[traumaInjury]}」對應碼</span>`;
-    return `<div class="multi-row"><span class="mlabel">${multiLabel(s)}</span>${body}<button type="button" class="mdel" onclick="multiRemove(${i})" title="移除">✕</button></div>`;
+    return `<div class="multi-row" onclick="multiCopy(${i},this)" title="點一下複製此碼"><span class="mlabel">${multiLabel(s)}</span>${body}<button type="button" class="mdel" onclick="event.stopPropagation();multiRemove(${i})" title="移除">✕</button></div>`;
   }).join("");
+}
+function multiCopy(i,row){   // 點列複製單碼(同主結果卡片行為：複製+進最近使用)
+  const s=multiSel[i]; if(!s) return;
+  const sug=multiSuggest(s.part,s.side); if(!sug) return;
+  const out=fmtCode(sug.code);
+  navigator.clipboard?.writeText(out);
+  pushRecent(sug.code,sug.zh);
+  let ok=row.querySelector(".mok");
+  if(!ok){ ok=document.createElement("span"); ok.className="mok"; row.insertBefore(ok,row.querySelector(".mdel")); }
+  ok.textContent="✓ 已複製 "+out;
+  clearTimeout(ok._t); ok._t=setTimeout(()=>ok.remove(),1300);
 }
 function multiRemove(i){
   const s=multiSel.splice(i,1)[0];
