@@ -883,13 +883,13 @@ function injuryEntry(prefixes,q){
 }
 const NO_MATCH_PREFIX="__NO_MATCH__";
 function noEntry(q){ return injuryEntry(NO_MATCH_PREFIX,q||""); }
-function injuryMap(superficial,openWound,fracture,sprain,q){
+function injuryMap(superficial,openWound,fracture,sprain,q,fractureQ){
   const mk=(prefixes,sortText)=>injuryEntry(prefixes,sortText||q||"");
   return {
     abrasion:mk(superficial),
     contusion:mk(superficial),
     laceration:mk(openWound),
-    fracture:mk(fracture),
+    fracture:mk(fracture,fractureQ),   // fractureQ 可選：讓骨折用專屬排序詞(如前胸壁優先肋骨而非胸骨)
     sprain:mk(sprain),
   };
 }
@@ -947,8 +947,8 @@ const ANATOMICAL_MAP={
   },
   occiput:injuryMap("S00.0","S01.0","S02.11",NO_MATCH_PREFIX,"occiput scalp"),   // 後腦無扭傷
   neck:injuryMap("S10","S11","S12","S13","neck"),
-  chest:injuryMap(["S20.0","S20.1","S20.21","S20.3"],["S21.0","S21.1","S21.3"],["S22.2","S22.3","S22.4","S22.5"],"S23","front wall thorax breast"),
-  chest_front:injuryMap(["S20.0","S20.1","S20.21","S20.3"],["S21.0","S21.1","S21.3"],["S22.2","S22.3","S22.4","S22.5"],"S23","front wall thorax breast"),
+  chest:injuryMap(["S20.0","S20.1","S20.21","S20.3"],["S21.0","S21.1","S21.3"],["S22.2","S22.3","S22.4","S22.5"],"S23","front wall thorax breast","rib thorax"),   // 骨折優先肋骨(S22.3)非胸骨
+  chest_front:injuryMap(["S20.0","S20.1","S20.21","S20.3"],["S21.0","S21.1","S21.3"],["S22.2","S22.3","S22.4","S22.5"],"S23","front wall thorax breast","rib thorax"),
   chest_back:injuryMap(["S20.22","S20.4"],["S21.2","S21.4"],["S22.3","S22.4","S22.5"],"S23","back wall thorax rib"),
   abdomen:injuryMap("S30.1","S31.1","S32","S33","abdominal wall"),
   abdomen_front:injuryMap("S30.1","S31.1","S32","S33","abdominal wall"),
