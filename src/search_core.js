@@ -24,6 +24,7 @@ const SYN = {
   "legs":"leg","limbs":"limb",   // 複數→單數(2026-07-07 回饋：contusion of legs/limbs 查無)
   "ulc":"ulcer",                 // 病歷常見截斷寫法(duodenal ulc)
   "cancer":"malignant neoplasm","cancers":"malignant neoplasm",   // 官方碼名用 malignant neoplasm，不用 cancer
+  "gouty":"gout","flu":"influenza",   // 2026-07-08 體檢批次
 };
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
@@ -66,6 +67,16 @@ const ABBR = {
   "ihca":"cardiac arrest","bzd":"benzodiazepine",   // 2026-06-27 回饋補
   "hss":"hyperosmolar hyperglycemia",               // 2026-07-07 回饋補：HSS(=HHS 高血糖高滲透壓狀態)
   "du":"duodenal ulcer",                            // 2026-07-07 回饋補：DU 十二指腸潰瘍
+  // 2026-07-08 體檢批次(76 個常用查詢實跑找出的缺口)
+  "aecopd":"chronic obstructive pulmonary exacerbation",
+  "adhf":"heart failure",                           // 急性失代償心衰
+  "rosc":"cardiac arrest",                          // 原誤中羅斯河病 B33.1
+  "pta":"peritonsillar abscess",                    // 原誤中凝血因子XI缺乏(PTA 舊稱)
+  "cbd":"bile duct",                                // CBD stone→膽管結石(原誤中腎結石)
+  "mva":"motor vehicle accident",
+  "aub":"abnormal uterine bleeding",
+  "luts":"lower urinary tract symptoms",
+  "ppu":"peptic ulcer perforation",                 // 官方碼名用 perforation 非 perforated
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
@@ -166,6 +177,32 @@ const PHRASE_CODE = {
   "lung cancer":["C34.90"],     // 原發置頂(同分時 C78.00 續發性碼名字少會排前)
   "breast cancer":["C50.919"],  // 乳癌置頂(原 C44.501 乳房皮膚癌排前)
   "cholecystitis":["K81.9","K81.0"],  // 膽囊炎 unspecified+急性置頂(原被 K80.20「膽結石未伴有膽囊炎」常見碼加權蓋過)
+  // 體檢批次(2026-07-08)：76 個常用查詢實跑，修「第一名是錯的」
+  "anaphylaxis":["T78.2"],"anaphylactic shock":["T78.2"],  // 原第一名是「過敏性反應個人史」Z87.892
+  "empyema":["J86.9"],                              // 原誤中肺氣腫 emphysema(拼字模糊)，肺積膿
+  "empyema gallbladder":["K81.0"],"gallbladder empyema":["K81.0"],  // 膽囊蓄膿=急性膽囊炎
+  "septic arthritis":["M00.9"],                     // 原跑出敗血症
+  "testicular torsion":["N44.00"],"torsion testis":["N44.00"],  // 原跑出睪丸疼痛
+  "perforated peptic ulcer":["K27.5","K27.1"],"ppu":["K27.5","K27.1"],  // 原跑出穿孔性角膜潰瘍
+  "thyroid storm":["E05.91"],                       // 原跑出異位甲狀腺組織
+  "aortic dissection":["I71.00"],"dissection aorta":["I71.00"],  // 原 I71.011 弓部排前；未明示部位優先
+  "seizure":["R56.9"],                              // 急診預設痙攣 NOS(原 G40.89 其他發作排前)
+  "angioedema":["T78.3"],                           // 原跑出嗜酸性白血球增多
+  "paronychia":["L03.019","L03.039"],               // 甲溝炎=指/趾蜂窩組織炎(原跑出念珠菌病)
+  "herpes simplex":["B00.9"],                       // 原跑出疱疹性脊髓炎
+  "co intoxication":["T58.91","T58.92","T58.94"],   // 意外優先，並列自傷/意圖未明(原「被加害」排前)
+  "carbon monoxide intoxication":["T58.91","T58.92","T58.94"],
+  "co poisoning":["T58.91","T58.92","T58.94"],
+  "aecopd":["J44.1"],"adhf":["I50.9"],"rosc":["I46.9"],
+  "mva":["V89.2"],"aub":["N93.9"],"luts":["N40.1","R39.198"],
+  "od":["T50.901","T50.902"],                       // 同 overdose：意外+自傷並列
+  "influenza":["J11.1"],                            // 未確認病毒株+呼吸道表徵=急診預設(原 J10 已確認排前)
+  "edema":["R60.9"],                                // 水腫 NOS(原被 J81.0 急性肺水腫常見碼加權蓋過)
+  "mesenteric ischemia":["K55.059"],                // 未明示程度優先
+  "gouty arthritis":["M10.9"],                      // 原查無(gouty 對不到 gout)
+  "frozen shoulder":["M75.00"],                     // 五十肩=粘連性囊炎，原查無
+  // 單純膽管結石優先(K80.30「併膽管炎，unspecified」的 unspecified 指膽管炎急慢性，會沾 unspec 旗標的光)
+  "bile duct calculus":["K80.50"],"choledocholithiasis":["K80.50"],   // cbd stone 經 norm 命中前者
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
@@ -240,6 +277,8 @@ function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.1;
   // 沒查 chronic 時，慢性碼降權→急診情境讓急性/未明示優先(如 sinusitis 讓 J01 急性勝 J32 慢性)
   if(!qhas(qtoks,"chronic") && hay.includes(" chronic ")) pen+=0.14;
+  // 沒查 neonatal/newborn 時，新生兒碼降權→成人急診讓 E87.1 低血鈉勝 P74.22 新生兒低血鈉
+  if(!qhas(qtoks,"neonatal") && !qhas(qtoks,"newborn") && (hay.includes(" neonatal ")||hay.includes(" newborn "))) pen+=0.14;
   return cov - pen;
 }
 function buildCode(stem,ch){

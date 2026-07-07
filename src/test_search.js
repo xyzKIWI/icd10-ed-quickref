@@ -138,6 +138,39 @@ const cases = [
   ["hemorrhoid","K64.9"],
   ["cholecystitis","K81.9"],              // 原被 K80.20「膽結石未伴有膽囊炎」蓋過
   ["pleural effusion","J90"],             // NEC 樣板字不計多餘資訊
+  // 體檢批次(2026-07-08)：76 個常用查詢實跑找出的錯誤第一名/缺縮寫
+  ["anaphylaxis","T78.2"],                // 原第一名是「過敏性反應個人史」
+  ["empyema","J86.9"],                    // 原誤中肺氣腫
+  ["septic arthritis","M00.9"],
+  ["testicular torsion","N44.00"],
+  ["perforated peptic ulcer","K27.5"],
+  ["ppu","K27.5"],
+  ["thyroid storm","E05.91"],
+  ["aortic dissection","I71.00"],
+  ["seizure","R56.9"],
+  ["angioedema","T78.3"],
+  ["paronychia","L03.019"],
+  ["herpes simplex","B00.9"],
+  ["carbon monoxide intoxication","T58.91"],
+  ["pta","J36"],                          // 原誤中凝血因子XI缺乏
+  ["rosc","I46.9"],                       // 原誤中羅斯河病
+  ["aecopd","J44.1"],
+  ["adhf","I50.9"],
+  ["mva","V89.2"],
+  ["aub","N93.9"],
+  ["luts","N40.1"],
+  ["od","T50.901"],
+  ["cbd stone","K80.5"],                  // 膽管結石(原誤中腎結石)
+  ["hyponatremia","E87.1"],               // 新生兒碼降權：成人 E87.1 勝 P74.22
+  ["hypernatremia","E87.0"],
+  ["hypothermia","T68"],
+  ["influenza","J11.1"],
+  ["flu","J11.1"],
+  ["gouty arthritis","M10.9"],
+  ["frozen shoulder","M75.00"],
+  ["edema","R60.9"],
+  ["mesenteric ischemia","K55.059"],
+  ["empyema gallbladder","K81.0"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前
