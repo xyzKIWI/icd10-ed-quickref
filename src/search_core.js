@@ -23,6 +23,7 @@ const SYN = {
   "conjuntiva":"conjunctival","subconjuntiva":"conjunctival","subconjunctival":"conjunctival",
   "legs":"leg","limbs":"limb",   // 複數→單數(2026-07-07 回饋：contusion of legs/limbs 查無)
   "ulc":"ulcer",                 // 病歷常見截斷寫法(duodenal ulc)
+  "cancer":"malignant neoplasm","cancers":"malignant neoplasm",   // 官方碼名用 malignant neoplasm，不用 cancer
 };
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
@@ -123,6 +124,8 @@ function levLE(a,b,max){
 // 專一構造詞：碼名有、但 query 沒提 → 該碼較專一，往下壓（優先單純傷口/部位碼）
 const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve","vessel",
                    "flexor","extensor","abductor","adductor","intrinsic"];
+// tie-break 多餘字計算要跳過的「零臨床資訊」樣板字：without X = 沒有那個條件，不是多一個條件
+const EXTRA_SKIP = new Set(["unspecified","without","other","not","elsewhere","classifiable","classified"]);
 function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
 
 // 片語直接對應碼：關鍵字比對救不了的臨床慣用語，直接指定正確碼置頂(臨床回饋持續補)
@@ -159,6 +162,10 @@ const PHRASE_CODE = {
   "radial fracture":["S52.509","S52.501","S52.502"],"radius fracture":["S52.509","S52.501","S52.502"],
   "left radial fracture":["S52.502"],"left radius fracture":["S52.502"],
   "right radial fracture":["S52.501"],"right radius fracture":["S52.501"],
+  "gastric cancer":["C16.9"],   // gastric→stomach 不能做全域同義詞(官方胃潰瘍就叫 gastric ulcer)，用片語釘選
+  "lung cancer":["C34.90"],     // 原發置頂(同分時 C78.00 續發性碼名字少會排前)
+  "breast cancer":["C50.919"],  // 乳癌置頂(原 C44.501 乳房皮膚癌排前)
+  "cholecystitis":["K81.9","K81.0"],  // 膽囊炎 unspecified+急性置頂(原被 K80.20「膽結石未伴有膽囊炎」常見碼加權蓋過)
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
@@ -184,7 +191,9 @@ function indexEntry(e,kind){
     axToks=e.ax.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t&&!STOP.has(t)&&!ts.has(t));
     axhay=" "+axToks.join(" ")+" ";
   }
-  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh};
+  // unspecified/未明示 旗標：bare query 同分時優先（急診慣用 unspecified 碼）
+  const unspec = /unspecified/i.test(e.en) || /未明示/.test(e.zh||"");
+  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh,unspec};
 }
 function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   let acc=0, anyMatch=false, polarityPen=0;   // acc = Σ best·idf（命中的資訊量）
@@ -303,9 +312,25 @@ function searchCore(IDX,q,scope,prefixes){
     }else{
       sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
     }
-    if(sc>0) res.push([sc,item]);
+    if(sc>0){
+      // 同分 tie-break 用：碼名裡「query 沒提到的資訊量」(idf 加權)，越少 = 該碼越不多加條件
+      let ex=0;
+      if(hasText){
+        for(const t of item.toks){
+          if(EXTRA_SKIP.has(t)) continue;
+          let hit=false;
+          for(const qt of qtoks){ if(t===qt||(qt.length>2&&t.startsWith(qt))||(t.length>2&&qt.startsWith(t))){hit=true;break;} }
+          if(!hit) ex+=idf(t);
+        }
+      }
+      res.push([sc,item,ex]);
+    }
   }
-  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0) || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
+  // 排序通用規則(2026-07-07)：同分時 unspecified/未明示優先 → 碼名多餘資訊少者優先 → 短碼 → 字母序。
+  // 分數不動；查得越具體(acute/hemorrhage/left…)分數自然拉開，此規則只在同分時生效。
+  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0)
+    || (b[1].unspec?1:0)-(a[1].unspec?1:0) || (a[2]||0)-(b[2]||0)
+    || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
   let out = res.slice(0, pf ? 60 : 25);
   // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
   if(!pf){

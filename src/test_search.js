@@ -122,6 +122,22 @@ const cases = [
   ["lt radial fx","S52.502"],             // norm 後片語比對：lt→left、fx→fracture
   ["rt radius fx","S52.501"],
   ["radial fracture","S52.509"],
+  // 排序通用規則(2026-07-07)：同分時 unspecified/未明示優先 + cancer→malignant neoplasm 同義詞
+  ["gastritis","K29.70"],                 // 胃炎 unspecified 置頂(原急性胃炎排前)
+  ["stomach cancer","C16.9"],
+  ["gastric cancer","C16.9"],
+  ["colon cancer","C18.9"],
+  ["bladder cancer","C67.9"],
+  ["lung cancer","C34.90"],               // 原發置頂(非 C78.00 續發)
+  ["breast cancer","C50.919"],
+  ["anemia","D64.9"],                     // 貧血 unspecified 置頂
+  ["dermatitis","L30.9"],
+  ["otitis media","H66.90"],
+  ["pharyngitis","J02.9"],
+  ["tonsillitis","J03.90"],
+  ["hemorrhoid","K64.9"],
+  ["cholecystitis","K81.9"],              // 原被 K80.20「膽結石未伴有膽囊炎」蓋過
+  ["pleural effusion","J90"],             // NEC 樣板字不計多餘資訊
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

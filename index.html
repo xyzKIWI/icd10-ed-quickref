@@ -127,6 +127,21 @@
   .zone:hover{fill:var(--zoneOn);opacity:.62}
   .zone.on{fill:var(--accent);opacity:.74;stroke:var(--accent);stroke-width:1.5;paint-order:stroke}
   .zone.on:hover{opacity:.82}
+  /* 多部位模式：一次點多個部位，逐部位建議碼，一鍵全部加入多碼籃 */
+  .multi{border:1px solid var(--line);border-radius:10px;background:var(--field);padding:10px 11px;margin-top:10px}
+  .multi.hide{display:none}
+  .multi-title{font-size:12.5px;color:var(--sub);margin-bottom:6px}
+  .multi-title b{color:var(--txt)}
+  .multi-row{display:flex;align-items:center;gap:8px;padding:6px 2px;font-size:13px;border-bottom:1px dashed var(--line)}
+  .multi-row:last-of-type{border-bottom:none}
+  .multi-row .mlabel{color:var(--sub);white-space:nowrap}
+  .multi-row .mcode{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .multi-row .mzh{flex:1;color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .multi-row .mdel{border:none;background:none;color:var(--sub);cursor:pointer;font-size:13px;padding:2px 5px}
+  .multi-actions{display:flex;gap:8px;margin-top:9px}
+  .multi-actions button{border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--txt);padding:7px 11px;font-size:12.5px;cursor:pointer}
+  .multi-actions #multiAddAll{background:var(--active);border-color:var(--accent);color:var(--activeTxt);font-weight:700}
+  .multi-empty{color:var(--sub);font-size:12.5px;padding:4px 2px}
   footer{color:var(--muted);font-size:11px;text-align:center;padding:14px}
   .disclaimer{max-width:760px;margin:18px auto 0;padding:12px 14px;font-size:11.5px;line-height:1.7;
         color:var(--sub);background:var(--panel);border:1px solid var(--line);border-radius:10px}
@@ -198,6 +213,7 @@
       <button type="button" data-side-mode="left">左</button>
       <button type="button" data-side-mode="right">右</button>
       <button type="button" data-side-mode="bilateral">雙側</button>
+      <button type="button" id="multiTog" title="多處外傷：連點多個部位，一鍵全部加入清單">多部位模式</button>
     </div>
     <div class="figure-grid">
       <div class="figure-pane">
@@ -272,6 +288,14 @@
         </svg>
       </div>
     </div>
+    <div class="multi hide" id="multiPanel">
+      <div class="multi-title"><b>多部位清單</b>：點小人圖累積部位（再點一次取消），共用上方傷型</div>
+      <div id="multiList"></div>
+      <div class="multi-actions">
+        <button type="button" id="multiAddAll">➕ 全部加入清單</button>
+        <button type="button" id="multiClearBtn">清除部位</button>
+      </div>
+    </div>
   </section>
   <button class="trauma-open" id="openTrauma" type="button"><b>外傷小人圖</b>：點一下重新選部位</button>
   <div class="refine hide" id="refinePanel">
@@ -281,7 +305,7 @@
   <div id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></div>
 </main>
 <div class="disclaimer">
-  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以正式編碼系統及醫療專業判斷為準；一般查詢純前端運算、不上傳，僅使用者主動送出回饋時會送出該次關鍵字與備註，不蒐集其他輸入內容。開發者不對因使用本工具所生之任何後果負責。（資料校對：2026-06-29）
+  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以正式編碼系統及醫療專業判斷為準；一般查詢純前端運算、不上傳，僅使用者主動送出回饋時會送出該次關鍵字與備註，不蒐集其他輸入內容。開發者不對因使用本工具所生之任何後果負責。
 </div>
 <footer id="ver"></footer>
 
@@ -319,6 +343,7 @@ const SYN = {
   "conjuntiva":"conjunctival","subconjuntiva":"conjunctival","subconjunctival":"conjunctival",
   "legs":"leg","limbs":"limb",   // 複數→單數(2026-07-07 回饋：contusion of legs/limbs 查無)
   "ulc":"ulcer",                 // 病歷常見截斷寫法(duodenal ulc)
+  "cancer":"malignant neoplasm","cancers":"malignant neoplasm",   // 官方碼名用 malignant neoplasm，不用 cancer
 };
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
@@ -419,6 +444,8 @@ function levLE(a,b,max){
 // 專一構造詞：碼名有、但 query 沒提 → 該碼較專一，往下壓（優先單純傷口/部位碼）
 const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve","vessel",
                    "flexor","extensor","abductor","adductor","intrinsic"];
+// tie-break 多餘字計算要跳過的「零臨床資訊」樣板字：without X = 沒有那個條件，不是多一個條件
+const EXTRA_SKIP = new Set(["unspecified","without","other","not","elsewhere","classifiable","classified"]);
 function qhas(qtoks,w){ return qtoks.indexOf(w)>=0; }
 
 // 片語直接對應碼：關鍵字比對救不了的臨床慣用語，直接指定正確碼置頂(臨床回饋持續補)
@@ -455,6 +482,10 @@ const PHRASE_CODE = {
   "radial fracture":["S52.509","S52.501","S52.502"],"radius fracture":["S52.509","S52.501","S52.502"],
   "left radial fracture":["S52.502"],"left radius fracture":["S52.502"],
   "right radial fracture":["S52.501"],"right radius fracture":["S52.501"],
+  "gastric cancer":["C16.9"],   // gastric→stomach 不能做全域同義詞(官方胃潰瘍就叫 gastric ulcer)，用片語釘選
+  "lung cancer":["C34.90"],     // 原發置頂(同分時 C78.00 續發性碼名字少會排前)
+  "breast cancer":["C50.919"],  // 乳癌置頂(原 C44.501 乳房皮膚癌排前)
+  "cholecystitis":["K81.9","K81.0"],  // 膽囊炎 unspecified+急性置頂(原被 K80.20「膽結石未伴有膽囊炎」常見碼加權蓋過)
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
@@ -480,7 +511,9 @@ function indexEntry(e,kind){
     axToks=e.ax.toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t&&!STOP.has(t)&&!ts.has(t));
     axhay=" "+axToks.join(" ")+" ";
   }
-  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh};
+  // unspecified/未明示 旗標：bare query 同分時優先（急診慣用 unspecified 碼）
+  const unspec = /unspecified/i.test(e.en) || /未明示/.test(e.zh||"");
+  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh,unspec};
 }
 function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   let acc=0, anyMatch=false, polarityPen=0;   // acc = Σ best·idf（命中的資訊量）
@@ -599,9 +632,25 @@ function searchCore(IDX,q,scope,prefixes){
     }else{
       sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
     }
-    if(sc>0) res.push([sc,item]);
+    if(sc>0){
+      // 同分 tie-break 用：碼名裡「query 沒提到的資訊量」(idf 加權)，越少 = 該碼越不多加條件
+      let ex=0;
+      if(hasText){
+        for(const t of item.toks){
+          if(EXTRA_SKIP.has(t)) continue;
+          let hit=false;
+          for(const qt of qtoks){ if(t===qt||(qt.length>2&&t.startsWith(qt))||(t.length>2&&qt.startsWith(t))){hit=true;break;} }
+          if(!hit) ex+=idf(t);
+        }
+      }
+      res.push([sc,item,ex]);
+    }
   }
-  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0) || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
+  // 排序通用規則(2026-07-07)：同分時 unspecified/未明示優先 → 碼名多餘資訊少者優先 → 短碼 → 字母序。
+  // 分數不動；查得越具體(acute/hemorrhage/left…)分數自然拉開，此規則只在同分時生效。
+  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0)
+    || (b[1].unspec?1:0)-(a[1].unspec?1:0) || (a[2]||0)-(b[2]||0)
+    || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
   let out = res.slice(0, pf ? 60 : 25);
   // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
   if(!pf){
@@ -1193,17 +1242,26 @@ function chooseSeg(container,attr,value){
   document.querySelectorAll(`#${container} button`).forEach(b=>b.classList.toggle("on",b.dataset[attr]===value));
 }
 document.querySelectorAll("#injurySeg button").forEach(b=>b.onclick=()=>{
-  traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury); updateTraumaState();
+  traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury);
+  if(multiMode){ renderMulti(); updateTraumaState(`多部位模式 · ${INJURY_LABEL[traumaInjury]}`); }
+  else updateTraumaState();
 });
 document.querySelectorAll("#sideSeg button").forEach(b=>b.onclick=()=>{
   traumaSideMode=b.dataset.sideMode; chooseSeg("sideSeg","sideMode",traumaSideMode); updateTraumaState();
 });
 document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
-  document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
-  z.classList.add("on");
   const part=z.dataset.part;
   const autoSide=z.dataset.side || "";
   const side = traumaSideMode==="auto" ? autoSide : traumaSideMode==="none" ? "" : traumaSideMode;
+  if(multiMode){   // 多部位模式：點了累積、再點取消，不收合面板、不跑單選查詢
+    const j=multiSel.findIndex(s=>s.part===part&&s.side===side);
+    if(j>=0){ multiSel[j].zones.forEach(x=>x.classList.remove("on")); multiSel.splice(j,1); }
+    else { multiSel.push({part,side,zones:[z]}); z.classList.add("on"); }
+    renderMulti();
+    return;
+  }
+  document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
+  z.classList.add("on");
   const prefixes=applyPartSelection(part,side);
   setTraumaVisible(false);
   hideRefine();
@@ -1216,10 +1274,81 @@ document.getElementById("clearTrauma").onclick=()=>{
   qel.value="";
   ACTIVE_PREFIXES=null;
   toggleClearBtn();
-  updateTraumaState();
+  if(multiMode){ multiSel=[]; renderMulti(); updateTraumaState(`多部位模式 · ${INJURY_LABEL[traumaInjury]}`); }
+  else updateTraumaState();
   setTraumaVisible(true);
   hideRefine();
   search("");
+};
+
+// ===== 多部位模式：一次點多個部位，逐部位建議碼，一鍵全部加入多碼籃 =====
+let multiMode=false, multiSel=[];   // {part, side, zones:[熱區元素]}
+const multiTog=document.getElementById("multiTog");
+const multiPanel=document.getElementById("multiPanel");
+const multiListEl=document.getElementById("multiList");
+function multiSuggest(part,side){
+  const cfg=ANATOMICAL_MAP[part] && ANATOMICAL_MAP[part][traumaInjury];
+  const prefixes=cfg ? cfg.prefixes : null;
+  if(!prefixes || prefixes[0]===NO_MATCH_PREFIX) return null;
+  const sortText=(cfg && cfg.q) || PART_SORT_TEXT[part] || "";
+  const q=[traumaInjury,side,sortText].filter(Boolean).join(" ");   // 與單選流程同一套查詢，取第 1 名當建議碼
+  const r=searchCore(IDX,q,"all",prefixes);
+  if(!r.length) return null;
+  const e=r[0][1].e;
+  const chars=e.s7 ? e.s7.split("") : [""];
+  const def=chars.includes("A")?"A":chars[0];
+  return {code:buildCode(e.c,def), zh:variantZh(e,def)};
+}
+function multiLabel(s){
+  return (s.side ? SIDE_LABEL[s.side] : "")+PART_LABEL[s.part]+" "+INJURY_LABEL[traumaInjury];
+}
+function renderMulti(){
+  if(!multiSel.length){
+    multiListEl.innerHTML='<div class="multi-empty">尚未選部位——直接點小人圖，可連點多個</div>';
+    return;
+  }
+  multiListEl.innerHTML=multiSel.map((s,i)=>{
+    const sug=multiSuggest(s.part,s.side);
+    const body=sug
+      ? `<span class="mcode">${fmtCode(sug.code)}</span><span class="mzh">${sug.zh}</span>`
+      : `<span class="mzh">此部位無「${INJURY_LABEL[traumaInjury]}」對應碼</span>`;
+    return `<div class="multi-row"><span class="mlabel">${multiLabel(s)}</span>${body}<button type="button" class="mdel" onclick="multiRemove(${i})" title="移除">✕</button></div>`;
+  }).join("");
+}
+function multiRemove(i){
+  const s=multiSel.splice(i,1)[0];
+  if(s) s.zones.forEach(z=>z.classList.remove("on"));
+  renderMulti();
+}
+document.getElementById("multiClearBtn").onclick=()=>{
+  multiSel.forEach(s=>s.zones.forEach(z=>z.classList.remove("on")));
+  multiSel=[];
+  renderMulti();
+};
+document.getElementById("multiAddAll").onclick=function(){
+  let n=0;
+  for(const s of multiSel){
+    const sug=multiSuggest(s.part,s.side);
+    if(sug && !basket.some(b=>b.code===sug.code)){ basket.push({code:sug.code,zh:sug.zh}); n++; }
+  }
+  renderBasket();
+  this.textContent = n ? `✓ 已加入 ${n} 碼` : "✓ 已在清單";
+  clearTimeout(this._t); this._t=setTimeout(()=>{ this.textContent="➕ 全部加入清單"; },1400);
+};
+multiTog.onclick=()=>{
+  multiMode=!multiMode;
+  multiTog.classList.toggle("on",multiMode);
+  multiPanel.classList.toggle("hide",!multiMode);
+  document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
+  hideRefine();
+  if(multiMode){
+    ACTIVE_PREFIXES=null; qel.value=""; toggleClearBtn(); search("");
+    renderMulti();
+    updateTraumaState(`多部位模式 · ${INJURY_LABEL[traumaInjury]}`);
+  }else{
+    multiSel=[];
+    updateTraumaState();
+  }
 };
 openTraumaBtn.onclick=()=>setTraumaVisible(true);
 const clearQ=document.getElementById("clearQ");
