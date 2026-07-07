@@ -107,6 +107,21 @@ const cases = [
   ["subconjunctival hemorrhage","H11.3"], // sub-/typo→conjunctival
   ["subconjuntiva hemorrhage","H11.3"],
   ["acute appendicitis","K35.80"],        // 精準，不被一堆 acute 淹沒
+  // 臨床回饋修正(2026-07-07)
+  ["hss","E11.00"],                       // HSS/HHS 高血糖高滲透壓狀態
+  ["hhs","E11.00"],
+  ["contusion of limbs","S80.10"],        // 四肢挫傷：無 limb 碼，列各肢 unspecified
+  ["limbs contusion","S80.10"],
+  ["contusion of legs","S80.10"],         // 複數 legs→leg
+  ["conjunctivitis","H10.9"],             // unspecified 置頂
+  ["sma aneurysm","I72.9"],               // SMA 動脈瘤
+  ["du","K26.9"],                         // DU 十二指腸潰瘍 unspecified 置頂
+  ["duodenal ulcer","K26.9"],
+  ["duodenal ulc","K26"],                 // 截斷寫法 ulc→ulcer
+  ["left radial fracture","S52.502"],     // 橈骨遠端(lower end)骨折置頂
+  ["lt radial fx","S52.502"],             // norm 後片語比對：lt→left、fx→fracture
+  ["rt radius fx","S52.501"],
+  ["radial fracture","S52.509"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

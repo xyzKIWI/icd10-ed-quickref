@@ -21,6 +21,8 @@ const SYN = {
   // 結膜出血：官方碼名用 conjunctival，sub- 前綴與少 c 的 typo 都導過去
   "subconjunctival":"conjunctival","subconjunctiva":"conjunctival","conjunctiva":"conjunctival",
   "conjuntiva":"conjunctival","subconjuntiva":"conjunctival","subconjunctival":"conjunctival",
+  "legs":"leg","limbs":"limb",   // 複數→單數(2026-07-07 回饋：contusion of legs/limbs 查無)
+  "ulc":"ulcer",                 // 病歷常見截斷寫法(duodenal ulc)
 };
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
@@ -61,6 +63,8 @@ const ABBR = {
   "brbpr":"hemorrhage of anus and rectum","nv":"nausea vomiting",
   "t1dm":"type 1 diabetes","t2dm":"type 2 diabetes","ptb":"pulmonary tuberculosis",  // 2026-06-23 補
   "ihca":"cardiac arrest","bzd":"benzodiazepine",   // 2026-06-27 回饋補
+  "hss":"hyperosmolar hyperglycemia",               // 2026-07-07 回饋補：HSS(=HHS 高血糖高滲透壓狀態)
+  "du":"duodenal ulcer",                            // 2026-07-07 回饋補：DU 十二指腸潰瘍
 };
 
 function hasCJK(s){return /[一-鿿]/.test(s);}
@@ -143,6 +147,18 @@ const PHRASE_CODE = {
   "herpes zoster":["B02.9","B02.8"],                // 帶狀疱疹：無併發症/其他併發症置頂(原 B02.39 眼部排前)
   "zoster":["B02.9","B02.8"],
   "numbness":["R20.0","R20.2"],                     // 麻木：皮膚感覺缺失/感覺異常置頂(原跑出免疫缺乏症)
+  // 臨床回饋(2026-07-07)：強制置頂正確碼
+  "hss":["E11.00","E11.01"],"hhs":["E11.00","E11.01"],  // 高血糖高滲透壓狀態：E11.00 未昏迷/E11.01 伴昏迷
+  "conjunctivitis":["H10.9"],                       // 結膜炎：unspecified 置頂(原按字母序披衣菌/病毒性排前)
+  "sma aneurysm":["I72.9","I72.8"],                 // 上腸繫膜動脈瘤：回饋指定 I72.9 置頂，並列 I72.8(官方索引 mesenteric→I72.8)供選
+  "du":["K26.9"],"duodenal ulcer":["K26.9"],        // 十二指腸潰瘍：unspecified 置頂(原急性併出血 K26.0 排前)
+  // 四肢挫傷：ICD 無單一 limb 碼，列小腿/前臂/大腿/上臂 unspecified 供選
+  "contusion limb":["S80.10","S50.10","S70.10","S40.029"],
+  "limb contusion":["S80.10","S50.10","S70.10","S40.029"],
+  // 橈骨骨折：遠端 lower end(Colles 類)最常見，置頂；norm 後備援讓 lt radial fx 等變體也命中
+  "radial fracture":["S52.509","S52.501","S52.502"],"radius fracture":["S52.509","S52.501","S52.502"],
+  "left radial fracture":["S52.502"],"left radius fracture":["S52.502"],
+  "right radial fracture":["S52.501"],"right radius fracture":["S52.501"],
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
@@ -293,7 +309,8 @@ function searchCore(IDX,q,scope,prefixes){
   let out = res.slice(0, pf ? 60 : 25);
   // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
   if(!pf){
-    const forced = PHRASE_CODE[q.toLowerCase().trim().replace(/\s+/g," ")];
+    // 原字串比對優先；查無再用 norm 後 token 比對(縮寫/複數/lt→left 展開)，讓 lt radial fx、contusion of limbs 等變體也命中
+    const forced = PHRASE_CODE[q.toLowerCase().trim().replace(/\s+/g," ")] || PHRASE_CODE[qtoks.join(" ")];
     if(forced){
       const set=new Set(forced), top=[];
       for(const code of forced){ const it=IDX.find(x=>x.e.c===code); if(it) top.push([999,it]); }
