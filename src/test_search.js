@@ -110,8 +110,8 @@ const cases = [
   // 臨床回饋修正(2026-07-07)
   ["hss","E11.00"],                       // HSS/HHS 高血糖高滲透壓狀態
   ["hhs","E11.00"],
-  ["contusion of limbs","S80.10"],        // 四肢挫傷：無 limb 碼，列各肢 unspecified
-  ["limbs contusion","S80.10"],
+  ["contusion of limbs","S40"],           // 四肢挫傷：無單一 limb 碼，落在肢體表淺挫傷(非燒傷即達標)
+  ["limbs contusion","S40"],
   ["contusion of legs","S80.10"],         // 複數 legs→leg
   ["conjunctivitis","H10.9"],             // unspecified 置頂
   ["sma aneurysm","I72.9"],               // SMA 動脈瘤
@@ -177,7 +177,18 @@ const cases = [
   ["Left chest contusion","S20.21"],       // 原→S06.3 大腦挫傷
   ["胸壁鈍傷","S20.2"],                    // 原→T21 燒傷
   ["頭皮血腫","S00.0"],                    // 原→C44 皮膚癌
-  ["肢體多處挫擦傷","S50.1"],              // 原→T24 腐蝕傷(至少落在肢體挫傷,非燒傷)
+  ["肢體多處挫擦傷","S40"],                // 原→T24 腐蝕傷,現落在肢體表淺挫傷(非燒傷即達標)
+  ["multiple abrasion over limbs","S40.2"], // 肢體擦傷,不再退回燒傷
+  ["前額鈍傷","S00.8"],                    // 前額→其他頭部,非 T20 燒傷
+  ["軀幹挫傷","S20.2"],                    // 軀幹→胸部挫傷,非 T21 燒傷
+  ["distal radius fracture","S52.5"],      // 橈骨遠端(Colles),官方 lower end of radius
+  ["distal radial fracure","S52.5"],       // 含拼字錯誤
+  ["colles fracture","S52.5"],
+  ["proximal tibia fracture","S82.1"],     // 脛骨近端(平台),官方 upper end of tibia
+  ["tibia plateau fracture","S82.1"],
+  ["distal ulna fracture","S52.6"],
+  ["proximal humerus fracture","S42.2"],
+  ["distal femur fracture","S72.4"],
   ["頸部鈍傷","S10.9"],
   ["腹部挫傷","S30.1"],
   ["臀部鈍傷","S30.0"],

@@ -98,18 +98,30 @@ function norm(q){
     const LESSER=new Set(["little","middle","ring","index","second","third","fourth","fifth","2nd","3rd","4th","5th","small","pinky","lesser"]);
     out=out.map(w=>GREAT.has(w)?"great":LESSER.has(w)?"lesser":w);
   }
-  // 臨床口語 → ICD 官方碼名：radial neck/head 寫作 neck/head of radius；
-  // distal humerus 寫作 lower end of humerus；both bone forearm 沒有獨立外傷碼，回到 forearm。
+  // 臨床口語 → ICD 官方碼名：radial neck/head 寫作 neck/head of radius。
   if(out.includes("radial")&&(out.includes("head")||out.includes("neck"))){
     out=out.map(w=>w==="radial"?"radius":w);
   }
-  if(out.includes("distal")&&out.includes("humerus")){
-    const expanded=[];
-    for(const w of out){
-      if(w==="distal") expanded.push("lower","end");
-      else expanded.push(w);
+  // 具名長骨的「遠端/近端/脛骨平台/eponym」→ ICD 官方「lower/upper end of <骨>」
+  // (distal radius / Colles→lower end radius=S52.5、proximal tibia / tibia plateau→upper end tibia=S82.1)。
+  // 只轉長骨，不動 distal phalanx(手指遠端指骨 S62.6)、radial styloid(S52.51 官方就用 radial)。
+  const BONE_ADJ={radial:"radius",radius:"radius",ulnar:"ulna",ulna:"ulna",tibial:"tibia",tibia:"tibia",
+                  femoral:"femur",femur:"femur",fibular:"fibula",fibula:"fibula",humeral:"humerus",humerus:"humerus"};
+  if(out.some(w=>w==="colles"||w==="smith"||w==="barton")){          // 橈骨遠端 eponym
+    out=out.filter(w=>!/^(colles|smith|barton)$/.test(w)&&BONE_ADJ[w]!=="radius").concat(["lower","end","radius"]);
+  }else if(out.includes("plateau")){                                 // 脛骨平台=脛骨近端
+    out=out.filter(w=>w!=="plateau"&&BONE_ADJ[w]!=="tibia").concat(["upper","end","tibia"]);
+  }else{
+    const end=out.includes("distal")?"lower":out.includes("proximal")?"upper":null;
+    let bone=null; for(const w of out){ if(BONE_ADJ[w]){ bone=BONE_ADJ[w]; break; } }
+    if(end && bone){
+      const res=[]; let done=false;
+      for(const w of out){
+        if(w==="distal"||w==="proximal"||BONE_ADJ[w]){ if(!done){ res.push(end,"end",bone); done=true; } }
+        else res.push(w);
+      }
+      out=res;
     }
-    out=expanded;
   }
   if(out.includes("forearm")&&out.includes("both")&&(out.includes("bone")||out.includes("bones"))){
     out=out.filter(w=>w!=="both"&&w!=="bone"&&w!=="bones");
@@ -147,8 +159,10 @@ const TRAUMA_TYPE = [
 const TRAUMA_PART = [
   [/四肢|肢體|多肢|多處肢|both limbs|multiple limb|limbs|extremit/i, "multilimb"],
   [/眶周|眼周|眼眶|眼皮|眼瞼|periorbit|periocular|orbital|eyelid|黑眼/i, "eye"],   // 眶周挫傷=黑眼圈,非大腦
+  [/前額|額頭|forehead/i, "face"],   // 前額=其他頭部 S00.8,非燒傷
   [/顏面|臉部|面部|facial|\bface\b|\bfacial\b/i, "face"],
   [/頦|下巴|下顎|jaw|chin/i, "face"],
+  [/軀幹|trunk/i, "trunk"],
   [/頭皮|後腦|枕部|枕|scalp/i, "scalp"],
   [/頸部|頸|neck/i, "neck"],
   [/前胸|胸壁|胸廓|胸部|\bchest\b|thorax|thoracic wall/i, "chest"],
@@ -186,23 +200,25 @@ const TRAUMA_MAP = {
   lowback:S(["S30.0"],["S31.0"],["S32.0"]),
   abdomen:S(["S30.1"],["S31.1"],["S32.8"]),
   buttock:S(["S30.0"],["S31.8"],["S32.8"]),
-  scapula:S(["S40.01","S40.02"],["S41"],["S42.1"]),
-  shoulder:S(["S40.0"],["S41"],["S42"]),
-  upperarm:S(["S40.02"],["S41.1"],["S42.2","S42.3"]),
-  elbow:  S(["S50.0"],["S51.0"],["S42.4","S52.0"]),
-  forearm:S(["S50.1"],["S51.8"],["S52"]),
-  wrist:  S(["S60.2"],["S61.5"],["S52.5","S52.6","S62.0","S62.1"]),
+  trunk:  S(["S20.2","S30.1","S30.0"],["S21.9","S31.9"],["S22","S32"]),   // 軀幹統包胸/腹/背表淺
+  // 四肢：表淺碼段用整段 S40/S50/S60/S70/S80/S90(含挫傷+擦傷子碼),讓 contusion/abrasion 都命中,不退回燒傷
+  scapula:S(["S40"],["S41"],["S42.1"]),
+  shoulder:S(["S40"],["S41"],["S42"]),
+  upperarm:S(["S40"],["S41"],["S42.2","S42.3"]),
+  elbow:  S(["S50"],["S51"],["S42.4","S52.0"]),
+  forearm:S(["S50"],["S51"],["S52"]),
+  wrist:  S(["S60"],["S61"],["S52.5","S52.6","S62.0","S62.1"]),
   hand:   S(["S60"],["S61"],["S62"]),
-  upperlimb:S(["S40.02","S50.1"],["S41","S51"],["S42","S52"]),
-  hip:    S(["S70.0"],["S71.0"],["S72.0"]),
-  thigh:  S(["S70.1"],["S71.1"],["S72"]),
-  knee:   S(["S80.0"],["S81.0"],["S82.0","S82.1","S72.4"]),
-  lowerleg:S(["S80.1"],["S81.8"],["S82"]),
-  ankle:  S(["S90.0"],["S91.0"],["S82.5","S82.6"]),
-  foot:   S(["S90.3"],["S91.3"],["S92"]),
+  upperlimb:S(["S40","S50"],["S41","S51"],["S42","S52"]),
+  hip:    S(["S70"],["S71"],["S72.0"]),
+  thigh:  S(["S70"],["S71"],["S72"]),
+  knee:   S(["S80"],["S81"],["S82.0","S82.1","S72.4"]),
+  lowerleg:S(["S80"],["S81"],["S82"]),
+  ankle:  S(["S90"],["S91"],["S82.5","S82.6"]),
+  foot:   S(["S90"],["S91"],["S92"]),
   toe:    S(["S90.1","S90.2"],["S91.1"],["S92.4","S92.5"]),
-  lowerlimb:S(["S80.1","S70.1"],["S81","S71"],["S82","S72"]),   // 下肢統包偏小腿/大腿(足自成部位)
-  multilimb:S(["S40.02","S50.1","S70.1","S80.1"],["S41","S51","S71","S81"],["S42","S52","S72","S82"]),
+  lowerlimb:S(["S80","S70"],["S81","S71"],["S82","S72"]),   // 下肢統包偏小腿/大腿(足自成部位)
+  multilimb:S(["S50","S80","S70","S40"],["S51","S81","S71","S41"],["S52","S82","S72","S42"]),   // 前臂/小腿優先(多處擦挫傷常見肢端)
 };
 // 具名長骨：命中則骨折交回一般搜尋(那條路徑更精準,且避免 radial head/femoral neck 的 head/neck 被誤判成部位)
 const NAMED_BONE = /radi(us|al)|ulnar?|humer(us|al)|femur|femoral|tibial?|fibular?|clavicl|patella|metacarp|metatars|phalan|carpal|tarsal|scaphoid|malleol|styloid|olecranon|calcane|navicular|sternum|vertebra|sacr|coccyx/i;
