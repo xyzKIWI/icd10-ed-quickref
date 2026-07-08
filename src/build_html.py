@@ -4,7 +4,8 @@ import base64
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 data = (ROOT/"build"/"icd_data.json").read_text(encoding="utf-8")
-core = (ROOT/"src"/"search_core.js").read_text(encoding="utf-8")
+lexicon = (ROOT/"src"/"lexicon.js").read_text(encoding="utf-8")
+core = lexicon + "\n" + (ROOT/"src"/"search_core.js").read_text(encoding="utf-8")   # lexicon 先注入,詞表 const 在同作用域供 core 用
 tpl = (ROOT/"src"/"template.html").read_text(encoding="utf-8")
 
 def img_b64(name):
