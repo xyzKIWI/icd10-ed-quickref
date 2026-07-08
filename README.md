@@ -49,11 +49,13 @@
   - **官方字母索引**：CMS FY2023 Alphabetic Index（62k 臨床用詞→碼）烤進每個碼的 `ax`(別名) 欄；別名命中封頂 0.5 分、正式碼名 1.0 主導，俗稱也查得到
 - **搜尋精準度**：
   - **IDF 字詞權重**（上限 5.5）：罕見字主導、acute/unspecified 等常用字幾乎不計分 → 濾掉「只命中常用字」的洪水
-  - **臨床安全懲罰**（硬約束）：極性相反（traumatic↔nontraumatic、displaced↔nondisplaced）score−0.9；專一構造詞（tendon/nerve/artery 未打出）懲罰；未查左右時帶側性的碼降權；急診沒查 chronic 時慢性碼降權（acute 優先）
+  - **臨床安全懲罰**（硬約束）：極性相反（traumatic↔nontraumatic、displaced↔nondisplaced）score−0.9；專一構造詞（tendon/nerve/artery 未打出）懲罰；未查左右時帶側性的碼降權；急診沒查 chronic 時慢性碼降權（acute 優先）；周產期 P 章與病史 Z 碼在成人急診語境降權（避免 SAH 誤中「生產傷害」、oral cancer 誤中「口腔癌病史」）
+  - **同分排序規則**：分數相同時 unspecified／未明示碼優先、碼名多餘條件少者優先（急診常用未明示碼自動上浮，不必逐條釘）
   - **PHRASE_CODE**：臨床慣用語直接置頂（nasal bleeding→R04.0、coma→R40.20、stroke→I63.9、overdose→T50.90x、無力→R53.1、意識不清/unconscious→R41.82…）
   - **縮寫稽核**：aod→主動脈剝離、aom→急性中耳炎、ptx/htx、vf、bppv、brbpr、appy、t1dm/t2dm、ptb 等；展開字串貼官方碼名（aod 用 dissection of aorta 而非 aortic dissection 以免混進腫瘤）；歧義過高者（ad/ap/ra/oa…）刻意不收
-- **效能**：38k 條目單次查詢約 40 ms（indexOf 快篩 + 閘門化模糊比對）。
-- **單檔內嵌**：資料、搜尋邏輯、兩張底圖（base64）全部內嵌進 HTML（file:// 下瀏覽器擋外部 JSON 的 CORS）。搜尋邏輯抽成 `search_core.js`，HTML 與測試共用同一份。
+- **打字外傷語意層**：打字命中「傷型詞（挫傷/擦傷/裂傷/骨折/鈍傷/血腫…）＋部位詞（顏面/胸/背/四肢…）」時，比照小人圖套用「部位×傷型→碼段白名單」硬過濾，杜絕中文外傷措辭滑進燒傷 T2x／生產傷害 P／大腦 S06／皮膚癌 C44。具名長骨的「遠端/近端/平台/Colles」自動轉成 ICD 官方「lower/upper end of 骨」（distal radius→S52.5、tibia plateau→S82.1）。
+- **效能**：38k 條目單次查詢約 30 ms（indexOf 快篩 + 閘門化模糊比對）。
+- **單檔內嵌**：資料、搜尋邏輯、兩張底圖（base64）全部內嵌進 HTML（file:// 下瀏覽器擋外部 JSON 的 CORS）。搜尋邏輯抽成 `search_core.js`、詞表（同義詞/縮寫/片語/外傷部位表）抽成 `lexicon.js`，HTML 與測試共用同一份——加詞只動 `lexicon.js`。
 
 ## 重新產生（pipeline）
 
@@ -78,10 +80,10 @@ python3 src/build_figure.py    # zones json → 寫進 template.html 的兩個 S
                                # 側別映射：front R→right、back R→left（背面解剖反轉）；標題自動帶左右
 
 # ── 3. 組裝 ──────────────────────────────────────────────
-python3 src/build_html.py      # 注入 icd_data.json + search_core.js + 兩張底圖 base64 → dist/icd_ed.html
+python3 src/build_html.py      # 注入 icd_data.json + lexicon.js + search_core.js + 兩張底圖 base64 → dist/icd_ed.html
 
 # ── 4. 測試 ──────────────────────────────────────────────
-node src/test_search.js        # 99 案例 + 極性/側別/手指/prefix 守門，應全過
+node src/test_search.js        # 194 案例 + 極性/側別/手指/prefix 守門，應全過
 
 # ── 5. 上線（GitHub Pages）────────────────────────────────
 cp dist/icd_ed.html index.html
@@ -114,12 +116,13 @@ data/    官方原始資料（XLSX、字母索引、損毀 CSV 備份）── .
 src/
   build_data.py     XLSX → build/icd_data.json（碼表 + 排序加權）
   build_index.py    CMS 字母索引別名 → 烤進 icd_data.json（ax 欄）
-  search_core.js    搜尋邏輯（norm/IDF/懲罰/PHRASE_CODE）── HTML 與測試共用同一份
+  lexicon.js        詞表資料層（同義詞/縮寫 ABBR/片語 PHRASE_CODE/外傷部位表）── 加詞只動這裡
+  search_core.js    搜尋邏輯（norm/IDF/懲罰/外傷語意層/排序）── HTML 與測試共用同一份
   manual_zones.py   小人圖熱區：方框 ∩ silhouette → 多邊形 json
   build_figure.py   zones json → 寫進 template.html 的 SVG（側別映射）
   template.html     UI（CSS + SVG 小人圖 + JS）
-  build_html.py     注入資料 + 邏輯 + 底圖 base64 → dist/icd_ed.html
-  test_search.js    99 案例 + 守門函式
+  build_html.py     注入資料 + 詞表 + 邏輯 + 底圖 base64 → dist/icd_ed.html
+  test_search.js    194 案例 + 守門函式
 design/
   chart_{front,back}_final.png   小人圖乾淨底圖（內嵌進成品）
   zones_{front,back}.json        熱區多邊形座標
@@ -130,8 +133,8 @@ dist/    icd_ed.html ← 最終成品，這個就是工具本體
 ## 已知範圍與未來可擴充
 
 - 全章節 billable ICD-10-CM 皆收錄；常見診斷排序加權只影響急診常見診斷的排序。
-- 小人圖：負責快速選外表部位；內部骨頭/關節用點選後的情境式細分按鈕處理（已做小腿 tibia/fibula，可續補 forearm/elbow 的 radius/ulna）。
-- 回饋循環：✏️ 累積搜不準的字 → 集中彙整後補 PHRASE_CODE/同義詞/排序。
+- 小人圖：負責快速選外表部位；內部骨頭/關節用點選後的情境式細分按鈕處理（前臂/肘/腕/膝/踝的 radius/ulna/tibia/fibula 細分皆已具備）。
+- 回饋循環：✏️ 累積搜不準的字 → 集中彙整後補 `lexicon.js` 的片語/同義詞/排序（詞表與邏輯已分離，加詞不碰核心）。
 - 未來選配：輸入一段診斷描述、自動抽取候選診斷的選配模式，MVP 刻意不做。
 
 ## 免責聲明
