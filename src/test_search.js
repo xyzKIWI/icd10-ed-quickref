@@ -171,6 +171,30 @@ const cases = [
   ["edema","R60.9"],
   ["mesenteric ischemia","K55.059"],
   ["empyema gallbladder","K81.0"],
+  // 外傷語意層 + 大審計批次(2026-07-08 治本)：中文外傷措辭杜絕滑進燒傷/生產傷害/大腦/皮膚癌
+  ["顏面挫傷","S00.83"],                   // 原→P15.4 生產傷害
+  ["facial contusion","S00.83"],
+  ["Left chest contusion","S20.21"],       // 原→S06.3 大腦挫傷
+  ["胸壁鈍傷","S20.2"],                    // 原→T21 燒傷
+  ["頭皮血腫","S00.0"],                    // 原→C44 皮膚癌
+  ["肢體多處挫擦傷","S50.1"],              // 原→T24 腐蝕傷(至少落在肢體挫傷,非燒傷)
+  ["頸部鈍傷","S10.9"],
+  ["腹部挫傷","S30.1"],
+  ["臀部鈍傷","S30.0"],
+  ["acute stroke","I63.9"],                // 原→G46.4 小腦症候群
+  ["ischemic stroke","I63.9"],
+  ["hyperthyroidism","E05.90"],            // 原→E03.9 甲狀腺低下(polarity)
+  ["hypothyroidism","E03.9"],
+  ["esophageal cancer","C15.9"],           // 原→C44.90 皮膚癌
+  ["rectal cancer","C20"],
+  ["oral cancer","C06.9"],
+  ["cancer pain","G89.3"],
+  ["peptic ulcer disease","K27.9"],        // 原→Z87.11 病史
+  ["SAH","I60"],                           // SAH 原→P10.3 生產傷害
+  ["radial head fracture","S52.12"],       // 具名長骨骨折不進外傷層,維持精準
+  ["radial neck fracture","S52.13"],
+  ["hip fracture","S72.0"],                // 外傷層區域骨折
+  ["ankle fracture","S82"],
 ];
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前

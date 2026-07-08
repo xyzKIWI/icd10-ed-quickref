@@ -84,7 +84,7 @@ function norm(q){
   q = q.toLowerCase();
   q = q.replace(/[,;]?\s*(cause|focus|etiology)\s+(to\s+be\s+)?determin\w*/g," ");  // 剝「…cause to be determined」尾綴
   q = q.replace(/\bn\s*\/\s*v\b/g," nausea vomiting ");   // n/v 在拆斜線前先展開，否則 v 會誤命中眼科 V pattern
-  q = q.replace(/[,\.\(\)\/\-]/g," ").replace(/#/g," fracture ");   // 連字號也拆（covid-19→covid 19、a-v→a v）
+  q = q.replace(/[,\.\(\)\/\-?!;:「」『』，、。？！；：]/g," ").replace(/#/g," fracture ");   // 連字號也拆（covid-19→covid 19）；清問號等標點(cause?→cause 才會被 STOP 濾)
   const parts = q.split(/\s+/).filter(Boolean);
   let out=[];
   for(let w of parts){
@@ -132,6 +132,93 @@ function levLE(a,b,max){
   }
   return prev[n];
 }
+// ===== 外傷語意層(2026-07-08 真實病歷大審計治本) =====
+// 打字查外傷時，比照小人圖用「部位×傷型→碼段白名單」硬過濾，杜絕中文措辭滑進燒傷 T2x/生產傷害 P/
+// 大腦 S06/皮膚癌 C44/手部 S60。只在「明確傷型詞 + 部位詞」都命中才觸發；純「頭部外傷」(無明確傷型)
+// 不觸發，維持原一般搜尋(S09.90)。白名單粒度比小人圖粗(打字比點圖模糊)，權威版仍是 template.html
+// 的 ANATOMICAL_MAP；此表為文字版子集，區域選擇對齊之。查無會退回全域(不像小人圖給查無)。
+const TRAUMA_TYPE = [
+  [/挫傷|瘀傷|鈍挫|挫瘀|鈍瘀|鈍傷|血腫|contus|bruise|h(a)?ematoma|blunt/i, "contusion"],   // 鈍傷/blunt 歸挫傷
+  [/擦傷|抓傷|擦挫|挫擦|abrasion|graze|scrape/i, "abrasion"],   // 挫擦傷同時含挫+擦，歸表淺(與 contusion 同碼段)
+  [/裂傷|撕裂|laceration/i, "laceration"],
+  [/骨折|fracture/i, "fracture"],
+];
+// 部位詞 → 區域鍵。順序要緊：長/具體詞在前(下肢 before 肢、前臂 before 臂、手腕 before 手、顏面 before 頭)。
+const TRAUMA_PART = [
+  [/四肢|肢體|多肢|多處肢|both limbs|multiple limb|limbs|extremit/i, "multilimb"],
+  [/眶周|眼周|眼眶|眼皮|眼瞼|periorbit|periocular|orbital|eyelid|黑眼/i, "eye"],   // 眶周挫傷=黑眼圈,非大腦
+  [/顏面|臉部|面部|facial|\bface\b|\bfacial\b/i, "face"],
+  [/頦|下巴|下顎|jaw|chin/i, "face"],
+  [/頭皮|後腦|枕部|枕|scalp/i, "scalp"],
+  [/頸部|頸|neck/i, "neck"],
+  [/前胸|胸壁|胸廓|胸部|\bchest\b|thorax|thoracic wall/i, "chest"],
+  [/下背|腰部|腰椎|腰|lower back|low back|lumbar/i, "lowback"],
+  [/上背|後背|背部|背|\bback\b/i, "back"],
+  [/腹部|腹壁|腹|abdom/i, "abdomen"],
+  [/臀部|臀|buttock|gluteal/i, "buttock"],
+  [/肩胛/i, "scapula"],
+  [/肩部|肩膀|肩|shoulder/i, "shoulder"],
+  [/上臂|upper arm/i, "upperarm"],
+  [/手肘|肘部|肘|elbow/i, "elbow"],
+  [/前臂|forearm/i, "forearm"],
+  [/手腕|腕部|腕|wrist/i, "wrist"],
+  [/手指|指頭|手掌|手背|\bhand\b|finger|palm/i, "hand"],
+  [/上肢|手臂|upper limb/i, "upperlimb"],
+  [/髖部|髖|hip/i, "hip"],
+  [/大腿|thigh/i, "thigh"],
+  [/膝部|膝蓋|膝|knee|patella/i, "knee"],
+  [/小腿|shin|calf|lower leg/i, "lowerleg"],
+  [/腳踝|踝部|踝|ankle/i, "ankle"],
+  [/腳趾|足趾|趾/i, "toe"],
+  [/足背|腳掌|足部|腳|\bfoot\b/i, "foot"],
+  [/下肢|lower limb|\bleg\b/i, "lowerlimb"],
+  [/頭部|\bhead\b/i, "scalp"],   // 頭部放最後：顏面/頭皮/後腦優先；頭部+明確傷型才到這
+];
+// 區域鍵 → {傷型:碼段白名單}。S(表淺,開放傷,骨折)：contusion/abrasion 共用表淺碼段。
+const S=(sup,open,frac)=>({contusion:sup,abrasion:sup,laceration:open,fracture:frac});
+const TRAUMA_MAP = {
+  eye:    S(["S00.1"],["S01.1"],["S02.3"]),   // 眶周/眼瞼挫傷 S00.1;眼眶骨折 S02.3
+  face:   S(["S00.8"],["S01.8","S01.4","S01.5"],["S02.2","S02.4","S02.5","S02.6","S02.8"]),   // 顏面表淺=其他頭部 S00.83;不含耳/鼻(自成部位)
+  scalp:  S(["S00.0"],["S01.0"],["S02.0","S02.1"]),
+  neck:   S(["S10"],["S11"],["S12"]),
+  chest:  S(["S20.21","S20.3"],["S21.1","S21.3"],["S22.3","S22.4","S22.2"]),   // 前胸壁,不含乳房 S20.0
+  back:   S(["S20.22","S20.4","S30.0"],["S21.2","S21.4","S31.0"],["S22.0","S32.0"]),
+  lowback:S(["S30.0"],["S31.0"],["S32.0"]),
+  abdomen:S(["S30.1"],["S31.1"],["S32.8"]),
+  buttock:S(["S30.0"],["S31.8"],["S32.8"]),
+  scapula:S(["S40.01","S40.02"],["S41"],["S42.1"]),
+  shoulder:S(["S40.0"],["S41"],["S42"]),
+  upperarm:S(["S40.02"],["S41.1"],["S42.2","S42.3"]),
+  elbow:  S(["S50.0"],["S51.0"],["S42.4","S52.0"]),
+  forearm:S(["S50.1"],["S51.8"],["S52"]),
+  wrist:  S(["S60.2"],["S61.5"],["S52.5","S52.6","S62.0","S62.1"]),
+  hand:   S(["S60"],["S61"],["S62"]),
+  upperlimb:S(["S40.02","S50.1"],["S41","S51"],["S42","S52"]),
+  hip:    S(["S70.0"],["S71.0"],["S72.0"]),
+  thigh:  S(["S70.1"],["S71.1"],["S72"]),
+  knee:   S(["S80.0"],["S81.0"],["S82.0","S82.1","S72.4"]),
+  lowerleg:S(["S80.1"],["S81.8"],["S82"]),
+  ankle:  S(["S90.0"],["S91.0"],["S82.5","S82.6"]),
+  foot:   S(["S90.3"],["S91.3"],["S92"]),
+  toe:    S(["S90.1","S90.2"],["S91.1"],["S92.4","S92.5"]),
+  lowerlimb:S(["S80.1","S70.1"],["S81","S71"],["S82","S72"]),   // 下肢統包偏小腿/大腿(足自成部位)
+  multilimb:S(["S40.02","S50.1","S70.1","S80.1"],["S41","S51","S71","S81"],["S42","S52","S72","S82"]),
+};
+// 具名長骨：命中則骨折交回一般搜尋(那條路徑更精準,且避免 radial head/femoral neck 的 head/neck 被誤判成部位)
+const NAMED_BONE = /radi(us|al)|ulnar?|humer(us|al)|femur|femoral|tibial?|fibular?|clavicl|patella|metacarp|metatars|phalan|carpal|tarsal|scaphoid|malleol|styloid|olecranon|calcane|navicular|sternum|vertebra|sacr|coccyx/i;
+function traumaParse(q){
+  let injury=null;
+  for(const [re,k] of TRAUMA_TYPE){ if(re.test(q)){ injury=k; break; } }
+  if(!injury) return null;
+  if(injury==="fracture" && NAMED_BONE.test(q)) return null;   // 具名長骨骨折→一般搜尋(較精準)
+  let part=null;
+  for(const [re,k] of TRAUMA_PART){ if(re.test(q)){ part=k; break; } }
+  if(!part) return null;
+  const m=TRAUMA_MAP[part]; if(!m) return null;
+  const pf=m[injury];
+  return (pf&&pf.length)?pf:null;
+}
+
 // 專一構造詞：碼名有、但 query 沒提 → 該碼較專一，往下壓（優先單純傷口/部位碼）
 const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve","vessel",
                    "flexor","extensor","abductor","adductor","intrinsic"];
@@ -149,6 +236,8 @@ const PHRASE_CODE = {
   "overdose":["T50.901","T50.902"],               // 藥物中毒(意外+自傷，醫師自選意圖)
   "drug overdose":["T50.901","T50.902"],
   "unconscious":["R41.82"],"意識不清":["R41.82"],   // = AMS 精神狀態改變
+  "conscious disturbance":["R41.82"],"conscious change":["R41.82"],"consciousness change":["R41.82"],
+  "altered consciousness":["R41.82"],"意識改變":["R41.82"],"意識障礙":["R41.82"],   // 原→S06.4X8 硬膜上出血死亡碼
   "無力":["R53.1"],                                 // 修：原本命中重症肌無力/子宮無力
   "aur":["R33.9"],                                  // 尿滯留：unspecified 置頂(原 R33.0 藥物導致排前)
   // 臨床回饋(2026-06-27)：強制置頂正確碼
@@ -203,6 +292,19 @@ const PHRASE_CODE = {
   "frozen shoulder":["M75.00"],                     // 五十肩=粘連性囊炎，原查無
   // 單純膽管結石優先(K80.30「併膽管炎，unspecified」的 unspecified 指膽管炎急慢性，會沾 unspec 旗標的光)
   "bile duct calculus":["K80.50"],"choledocholithiasis":["K80.50"],   // cbd stone 經 norm 命中前者
+  // 真實病歷大審計批次(2026-07-08)：中風/甲亢/器官癌/PUD 釘正確碼
+  "acute stroke":["I63.9"],"ischemic stroke":["I63.9"],"acute ischemic stroke":["I63.9"],
+  "cerebral infarction":["I63.9"],"infarct stroke":["I63.9"],
+  "hyperthyroidism":["E05.90"],                     // 原模糊命中 E03.9 甲狀腺低下(hypo)
+  "thyrotoxicosis":["E05.90"],
+  "peptic ulcer disease":["K27.9"],"peptic ulcer":["K27.9"],"pud":["K27.9"],  // 原命中 Z87.11 病史
+  "cancer pain":["G89.3"],                          // 腫瘤相關疼痛(原命中 C44 皮膚癌)
+  "esophageal cancer":["C15.9"],"esophageal ca":["C15.9"],
+  "rectal cancer":["C20"],"rectal ca":["C20"],
+  "oral cancer":["C06.9"],"oral ca":["C06.9"],
+  "liver cancer":["C22.9"],"hepatoma":["C22.0"],"hcc":["C22.0"],
+  "pancreatic cancer":["C25.9"],"prostate cancer":["C61"],
+  "cervical cancer":["C53.9"],"nasopharyngeal cancer":["C11.9"],"npc":["C11.9"],
 };
 
 // IDF 字詞權重：罕見字(gastroenteritis)權重高、常用字(acute/unspecified/left)權重低
@@ -277,8 +379,13 @@ function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   if(!qHasSide && (hay.includes(" left ")||hay.includes(" right ")||hay.includes(" bilateral "))) pen+=0.1;
   // 沒查 chronic 時，慢性碼降權→急診情境讓急性/未明示優先(如 sinusitis 讓 J01 急性勝 J32 慢性)
   if(!qhas(qtoks,"chronic") && hay.includes(" chronic ")) pen+=0.14;
-  // 沒查 neonatal/newborn 時，新生兒碼降權→成人急診讓 E87.1 低血鈉勝 P74.22 新生兒低血鈉
-  if(!qhas(qtoks,"neonatal") && !qhas(qtoks,"newborn") && (hay.includes(" neonatal ")||hay.includes(" newborn "))) pen+=0.14;
+  // 周產期章(P00-P96)整章降權：成人急診幾乎不用，除非明講新生兒/生產。重罰，杜絕
+  // SAH→P10.3 生產傷害、hyperthyroidism→P72.1 新生兒、顏面→P15.4 這類誤中。
+  if(item.e.c.charCodeAt(0)===80 && !qtoks.some(t=>/neonat|newborn|infant|birth|perinat|新生|生產|早產|胎|嬰/.test(t))) pen+=0.6;
+  // 病史/篩檢 Z 碼降權：Z85/86/87 個人史、Z80 家族史、Z12 篩檢——沒查 history/old/family/篩檢 時
+  // 讓現行病碼優先(oral cancer→C06 勝 Z85 口腔癌病史、ischemic stroke→I63 勝 Z86、PUD→K27 勝 Z87)。
+  // Z88 藥物過敏、Z91 過敏狀態等「現行狀態」碼不在此列(那是正確碼)。
+  if(/^Z(8[0567]|12)/.test(item.e.c) && !qtoks.some(t=>/histor|\bhx\b|\bold\b|previous|prior|family|screen|status|post|survivor|病史|個人史|家族史|篩檢|舊|陳舊|曾/.test(t))) pen+=0.5;
   return cov - pen;
 }
 function buildCode(stem,ch){
@@ -331,45 +438,53 @@ function codeSearch(IDX,q,scope){
 // prefixes：可選的 ICD 碼段白名單（小人圖用）。給了就「硬過濾」只留這些碼段，
 // 且查無時不 fallback 全域（防錯碼）。文字 q 仍負責在白名單內排序（如 back/chest 細分）。
 function searchCore(IDX,q,scope,prefixes){
-  const pf = (prefixes && prefixes.length) ? prefixes : null;
-  if(!q.trim() && !pf) return [];
-  if(!pf && isCodeQuery(q) && !ABBR[q.trim().toLowerCase()]) return codeSearch(IDX,q,scope);  // 整串是已知縮寫(t1dm/t2dm)→走文字搜尋,別誤判成代碼反查
+  const explicitPf = (prefixes && prefixes.length) ? prefixes : null;   // 小人圖點擊傳入
+  if(!q.trim() && !explicitPf) return [];
+  if(!explicitPf && isCodeQuery(q) && !ABBR[q.trim().toLowerCase()]) return codeSearch(IDX,q,scope);  // 整串是已知縮寫(t1dm/t2dm)→走文字搜尋,別誤判成代碼反查
   ensureDF(IDX);
   const qtoks=norm(q), cjk=hasCJK(q);
   const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
   const hasText = !!q.trim();
   const qIdf = qtoks.map(idf);
   let totalW=0; for(const w of qIdf) totalW+=w; if(totalW<=0) totalW=1;
-  const res=[];
-  for(const item of IDX){
-    if(scope!=="all"&&item.kind!==scope)continue;
-    if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
-    let sc;
-    if(hasText){
-      sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,pf?0.05:undefined);
-      if(sc>0 && item.e.b) sc*=1.4;       // 急診常見診斷加權
-    }else{
-      sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
-    }
-    if(sc>0){
-      // 同分 tie-break 用：碼名裡「query 沒提到的資訊量」(idf 加權)，越少 = 該碼越不多加條件
-      let ex=0;
+  // 外傷語意層：打字命中「傷型+部位」→ 套碼段白名單(同小人圖硬過濾)。小人圖點擊(explicitPf)優先。
+  const traumaPf = explicitPf ? null : traumaParse(q);
+  function collect(pf){
+    const res=[];
+    for(const item of IDX){
+      if(scope!=="all"&&item.kind!==scope)continue;
+      if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
+      let sc;
       if(hasText){
-        for(const t of item.toks){
-          if(EXTRA_SKIP.has(t)) continue;
-          let hit=false;
-          for(const qt of qtoks){ if(t===qt||(qt.length>2&&t.startsWith(qt))||(t.length>2&&qt.startsWith(t))){hit=true;break;} }
-          if(!hit) ex+=idf(t);
-        }
+        sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,pf?0.05:undefined);
+        if(sc>0 && item.e.b) sc*=1.4;       // 急診常見診斷加權
+      }else{
+        sc = item.e.b ? 1.4 : 1;            // 純部位(無文字)：全列出，常見碼略前
       }
-      res.push([sc,item,ex]);
+      if(sc>0){
+        // 同分 tie-break 用：碼名裡「query 沒提到的資訊量」(idf 加權)，越少 = 該碼越不多加條件
+        let ex=0;
+        if(hasText){
+          for(const t of item.toks){
+            if(EXTRA_SKIP.has(t)) continue;
+            let hit=false;
+            for(const qt of qtoks){ if(t===qt||(qt.length>2&&t.startsWith(qt))||(t.length>2&&qt.startsWith(t))){hit=true;break;} }
+            if(!hit) ex+=idf(t);
+          }
+        }
+        res.push([sc,item,ex]);
+      }
     }
+    // 排序通用規則(2026-07-07)：同分時 unspecified/未明示優先 → 碼名多餘資訊少者優先 → 短碼 → 字母序。
+    // 分數不動；查得越具體(acute/hemorrhage/left…)分數自然拉開，此規則只在同分時生效。
+    res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0)
+      || (b[1].unspec?1:0)-(a[1].unspec?1:0) || (a[2]||0)-(b[2]||0)
+      || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
+    return res;
   }
-  // 排序通用規則(2026-07-07)：同分時 unspecified/未明示優先 → 碼名多餘資訊少者優先 → 短碼 → 字母序。
-  // 分數不動；查得越具體(acute/hemorrhage/left…)分數自然拉開，此規則只在同分時生效。
-  res.sort((a,b)=> b[0]-a[0] || (b[1].e.b||0)-(a[1].e.b||0)
-    || (b[1].unspec?1:0)-(a[1].unspec?1:0) || (a[2]||0)-(b[2]||0)
-    || a[1].e.c.length-b[1].e.c.length || a[1].e.c.localeCompare(b[1].e.c));
+  const pf = explicitPf || traumaPf;
+  let res = collect(pf);
+  if(traumaPf && !res.length) res = collect(null);   // 外傷白名單查無 → 退回全域，不給空結果
   let out = res.slice(0, pf ? 60 : 25);
   // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
   if(!pf){
