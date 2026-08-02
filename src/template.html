@@ -500,14 +500,18 @@ buildIndex();
 document.getElementById("out").innerHTML='<div class="empty">輸入診斷關鍵字開始查詢</div>'+recentHtml();
 const qel=document.getElementById("q");
 let t;qel.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(()=>search(qel.value),60);});
-function setScope(s){
+let autoScoped=false;   // 外傷分頁是小人圖自動切的（非手動點分頁）；打字查新主題時自動退回「全部」
+function markScope(s){
   document.querySelectorAll(".scope button").forEach(x=>x.classList.remove("on"));
   const btn=document.querySelector(`.scope button[data-s="${s}"]`);
   if(btn) btn.classList.add("on");
   SCOPE=s;
+}
+function setScope(s){
+  markScope(s);
   search(qel.value);
 }
-document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>setScope(b.dataset.s));
+document.querySelectorAll(".scope button").forEach(b=>b.onclick=()=>{autoScoped=false;setScope(b.dataset.s);});
 
 const INJURY_LABEL={laceration:"撕裂傷",contusion:"挫傷",fracture:"骨折",sprain:"扭傷",abrasion:"擦傷",burn:"燒燙傷"};
 const SIDE_LABEL={auto:"自動側別",none:"未指定側別",left:"左側",right:"右側",bilateral:"雙側"};
@@ -850,6 +854,7 @@ function applyQuery(query,prefixes){
   qel.value=query;
   toggleClearBtn();
   setScope("inj");
+  autoScoped=true;
 }
 function applyPartSelection(part,side){
   const cfg=ANATOMICAL_MAP[part] && ANATOMICAL_MAP[part][traumaInjury];
@@ -1028,6 +1033,7 @@ const clearQ=document.getElementById("clearQ");
 function toggleClearBtn(){ clearQ.classList.toggle("show", !!qel.value); }
 qel.addEventListener("input",()=>{
   ACTIVE_PREFIXES=null;
+  if(autoScoped){ autoScoped=false; markScope("all"); }   // 小人圖切過去的外傷分頁，打字查下一題時自動回「全部」
   setTraumaVisible(false);
   hideRefine();
   toggleClearBtn();
