@@ -6,6 +6,10 @@ if (typeof module !== "undefined" && typeof require !== "undefined") require("./
 function hasCJK(s){return /[一-鿿]/.test(s);}
 function norm(q){
   q = q.toLowerCase();
+  // cont=挫傷慣用縮寫(2026-08-25)：整句只有 cont 時直接視為 contusion；否則僅在句中同時有
+  // 部位詞(TRAUMA_PART)時展開——cont dermatitis(=contact)、cont seizure 等非外傷語境不動。
+  if(/^cont\.?$/.test(q.trim())) q="contusion";
+  else if(/\bcont\b/.test(q) && TRAUMA_PART.some(([re])=>re.test(q))) q=q.replace(/\bcont\b/g," contusion ");
   q = q.replace(/[,;]?\s*(cause|focus|etiology)\s+(to\s+be\s+)?determin\w*/g," ");  // 剝「…cause to be determined」尾綴
   q = q.replace(/\bn\s*\/\s*v\b/g," nausea vomiting ");   // n/v 在拆斜線前先展開，否則 v 會誤命中眼科 V pattern
   q = q.replace(/[,\.\(\)\/\-?!;:「」『』，、。？！；：]/g," ").replace(/#/g," fracture ");   // 連字號也拆（covid-19→covid 19）；清問號等標點(cause?→cause 才會被 STOP 濾)
@@ -22,8 +26,31 @@ function norm(q){
     const LESSER=new Set(["little","middle","ring","index","second","third","fourth","fifth","2nd","3rd","4th","5th","small","pinky","lesser"]);
     out=out.map(w=>GREAT.has(w)?"great":LESSER.has(w)?"lesser":w);
   }
+  // 手指序數正規化(2026-08-25)：臨床慣用 1st=拇指、2nd=食指、3rd=中指、4th=無名指、5th=小指。
+  // 拇指碼名無 finger 字(S62.5 "…of thumb")，故 1st/first 轉 thumb 後把 finger token 移除。
+  // 只在有 finger token 時觸發，不影響 "1st metacarpal"(第一掌骨) 等既有查詢。
+  if(out.includes("finger")||out.includes("fingers")){
+    const FNAME={"1st":"thumb","first":"thumb","2nd":"index","second":"index","3rd":"middle","third":"middle",
+                 "4th":"ring","fourth":"ring","5th":"little","fifth":"little","pinky":"little","small":"little"};
+    let isThumb=false;
+    out=out.map(w=>{const m=FNAME[w]; if(m==="thumb")isThumb=true; return m||w;});
+    if(isThumb) out=out.filter(w=>w!=="finger"&&w!=="fingers");
+  }
+  // 中指歧義治本：middle finger 併成單一相鄰片語 token，與碼名「middle phalanx of unspecified finger」
+  // 區隔(原本 middle 誤沾指骨中段，中指本尊反被側別降權壓下去)。index/ring/little 一併處理，行為一致。
+  for(let i=0;i<out.length-1;i++){
+    if((out[i+1]==="finger"||out[i+1]==="fingers")&&/^(index|middle|ring|little)$/.test(out[i])){
+      out.splice(i,2,out[i]+" finger");
+    }
+  }
+  // 掌骨/蹠骨序數(2026-08-25)：官方碼名用拼字序數(first metacarpal bone)，數字序數對不到
+  if(out.includes("metacarpal")||out.includes("metatarsal")){
+    const ORD={"1st":"first","2nd":"second","3rd":"third","4th":"fourth","5th":"fifth"};
+    out=out.map(w=>ORD[w]||w);
+  }
   // 臨床口語 → ICD 官方碼名：radial neck/head 寫作 neck/head of radius。
-  if(out.includes("radial")&&(out.includes("head")||out.includes("neck"))){
+  // 限骨折語境：radial head dislocation 官方就叫 radial head(S53.0)，不可改寫
+  if(out.includes("radial")&&(out.includes("head")||out.includes("neck"))&&out.includes("fracture")){
     out=out.map(w=>w==="radial"?"radius":w);
   }
   // 具名長骨的「遠端/近端/脛骨平台/eponym」→ ICD 官方「lower/upper end of <骨>」
@@ -49,6 +76,20 @@ function norm(q){
   }
   if(out.includes("forearm")&&out.includes("both")&&(out.includes("bone")||out.includes("bones"))){
     out=out.filter(w=>w!=="both"&&w!=="bone"&&w!=="bones");
+  }
+  // 具名骨形容詞→名詞(2026-08-25)：骨折語境下對齊官方名詞形碼名(官方骨折碼名用 fibula/humerus/
+  // femur/tibia/clavicle…；原本形容詞形只靠模糊比對 0.55-0.8 分或查無——femoral fracture 誤中
+  // M84.75 非典型骨折後遺症、tibial fracture 誤中脛骨棘、clavicular fracture 完全查無)。
+  // 成對守衛(codex 全量枚舉官方碼名確認)：只有「該骨自己的官方形容詞構造」在句中時該骨才不轉——
+  // radial styloid(S52.51)、tibial spine/tuberosity(S82.11/.15)、atypical femoral fracture(M84.75)。
+  // ulnar styloid 官方反而用名詞(ulna styloid process S52.61)，故 ulnar 照轉。
+  if(out.includes("fracture")){
+    const FRAC_ADJ=Object.assign({},BONE_ADJ,{clavicular:"clavicle",patellar:"patella",scapular:"scapula",calcaneal:"calcaneus"});
+    const keep=new Set();
+    if(out.includes("styloid")) keep.add("radial");
+    if(out.includes("spine")||out.includes("tuberosity")) keep.add("tibial");
+    if(out.includes("atypical")) keep.add("femoral");
+    out=out.map(w=>keep.has(w)?w:(FRAC_ADJ[w]||w));
   }
   return out;
 }

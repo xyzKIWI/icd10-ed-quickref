@@ -27,7 +27,10 @@ const SYN = {
   "ulc":"ulcer",                 // 病歷常見截斷寫法(duodenal ulc)
   "cancer":"malignant neoplasm","cancers":"malignant neoplasm",   // 官方碼名用 malignant neoplasm，不用 cancer
   "gouty":"gout","flu":"influenza",   // 2026-07-08 體檢批次
+  "fractures":"fracture",             // 2026-08-25 複數(femoral fractures 原誤中 M84.75 後遺症)
 };
+// 注意：cont=挫傷縮寫不進 SYN 全域表(cont dermatitis=contact、cont seizure 會被誤吃)，
+// 改在 search_core.norm() 內「句中同時有部位詞」才展開。
 const STOP = new Set(["of","the","a","an","and","to","with","at","on","in","x",
   "cause","focus","determined","determinated","be","suspect","suspected","favor","favour",
   "impression","probable","possible","need","should","over"]);  // 急診病程慣用修飾詞
@@ -87,7 +90,7 @@ const ABBR = {
 // 不觸發，維持原一般搜尋(S09.90)。白名單粒度比小人圖粗(打字比點圖模糊)，權威版仍是 template.html
 // 的 ANATOMICAL_MAP；此表為文字版子集，區域選擇對齊之。查無會退回全域(不像小人圖給查無)。
 const TRAUMA_TYPE = [
-  [/挫傷|瘀傷|鈍挫|挫瘀|鈍瘀|鈍傷|血腫|contus|bruise|h(a)?ematoma|blunt/i, "contusion"],   // 鈍傷/blunt 歸挫傷
+  [/挫傷|瘀傷|鈍挫|挫瘀|鈍瘀|鈍傷|血腫|contus|\bcont\b|bruise|h(a)?ematoma|blunt/i, "contusion"],   // 鈍傷/blunt/cont 歸挫傷
   [/擦傷|抓傷|擦挫|挫擦|abrasion|graze|scrape/i, "abrasion"],   // 挫擦傷同時含挫+擦，歸表淺(與 contusion 同碼段)
   [/裂傷|撕裂|laceration/i, "laceration"],
   [/骨折|fracture/i, "fracture"],
@@ -105,7 +108,7 @@ const TRAUMA_PART = [
   [/前胸|胸壁|胸廓|胸部|\bchest\b|thorax|thoracic wall/i, "chest"],
   [/下背|腰部|腰椎|腰|lower back|low back|lumbar/i, "lowback"],
   [/上背|後背|背部|背|\bback\b/i, "back"],
-  [/腹部|腹壁|腹|abdom/i, "abdomen"],
+  [/腹部|腹壁|腹|abdom|\babd\b/i, "abdomen"],
   [/臀部|臀|buttock|gluteal/i, "buttock"],
   [/肩胛/i, "scapula"],
   [/肩部|肩膀|肩|shoulder/i, "shoulder"],

@@ -206,7 +206,44 @@ const cases = [
   ["radial neck fracture","S52.13"],
   ["hip fracture","S72.0"],                // 外傷層區域骨折
   ["ankle fracture","S82"],
+  // 手指序數 + 骨名形容詞/名詞 + cont 縮寫(2026-08-25 回饋批次)
+  ["1st finger fracture","S62.5"],         // 1st finger=拇指(原落 unspecified finger)
+  ["first finger fracture","S62.5"],       // 原誤中第一掌骨 S62.2
+  ["2nd finger fracture","S62.600"],       // 食指
+  ["3rd finger fracture","S62.602"],       // 中指(原被 middle phalanx 歧義蓋過)
+  ["middle finger fracture","S62.602"],    // 中指本尊，非「中段指骨之未明示手指」
+  ["4th finger fracture","S62.604"],       // 無名指
+  ["5th finger fracture","S62.606"],       // 小指
+  ["1st finger laceration","S61.0"],       // 拇指撕裂傷
+  ["fibular fx","S82.4"],                  // 形容詞形=名詞形
+  ["fibula fracture","S82.4"],
+  ["humeral fracture","S42"],
+  ["femoral fracture","S72.90"],           // 原誤中 M84.750S 非典型股骨骨折後遺症
+  ["tibial fracture","S82.209"],           // 原誤中脛骨棘 S82.113
+  ["femoral neck fracture","S72.0"],       // 官方 neck of femur
+  ["radial styloid fracture","S52.51"],    // 守衛：官方就用 radial，不可被轉壞
+  ["atypical femoral fracture","M84.75"],  // 守衛：官方用形容詞形，不轉
+  ["chest cont","S20.2"],                  // cont=contusion(原誤中胸痛 R07)
+  ["cont chest","S20.2"],
+  ["abd cont","S30.1"],                    // 腹壁挫傷優先
+  // codex 審查修正(2026-08-25)：成對守衛/語境限定後的回歸防護
+  ["small finger fracture","S62.606"],     // small=小指(原誤中腕骨 trapezoid)
+  ["ulnar styloid fracture","S52.61"],     // 官方名詞形 ulna styloid process,不可被 styloid 誤擋
+  ["1st metacarpal fracture","S62.2"],     // 數字序數→拼字序數(first metacarpal)
+  ["5th metacarpal fracture","S62.3"],
+  ["femoral fractures","S72.90"],          // 複數 fractures→fracture
+  ["clavicular fracture","S42.0"],         // 原完全查無
+  ["patellar fracture","S82.0"],
+  ["radial head dislocation","S53.0"],     // head/neck 改寫限骨折語境,勿蓋掉脫臼碼
 ];
+
+// 中指守門：middle finger fracture 前3名必須全是「中指本尊」碼，S62.629(中段指骨之未明示手指)不可混入
+function middleFingerGuard(){
+  const r=C.searchCore(IDX,"middle finger fracture","all").slice(0,3).map(x=>x[1].e);
+  const ok = r.length===3 && r.every(e=>/middle finger/i.test(e.en)) && !r.some(e=>e.c==="S62.629");
+  console.log((ok?"✅":"❌")+" 中指守門：middle finger fracture 前3名 = "+r.map(e=>e.c).join(", "));
+  return ok;
+}
 
 // ED 排序守門：手指撕裂傷，單純開放傷 S61 應排在肌腱傷 S56 之前
 function fingerGuard(){
@@ -294,7 +331,8 @@ for(let i=0;i<N;i++) for(const q of qs) C.searchCore(IDX,q,"all");
 const ms=(Date.now()-t0)/(N*qs.length);
 const guardOk = polarityGuard();
 const fingerOk = fingerGuard();
+const midOk = middleFingerGuard();
 const latOk = lateralityGuard();
 const prefixOk = prefixGuard();
 console.log(`=== ${pass}/${cases.length} 通過 ｜ 平均單次查詢 ${ms.toFixed(1)} ms（${IDX.length} 條目）===`);
-process.exit(pass===cases.length && guardOk && fingerOk && latOk && prefixOk?0:1);
+process.exit(pass===cases.length && guardOk && fingerOk && midOk && latOk && prefixOk?0:1);
