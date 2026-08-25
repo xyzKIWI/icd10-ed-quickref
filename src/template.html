@@ -103,6 +103,12 @@
   .refine.hide{display:none}
   .refine-title{font-size:12.5px;color:var(--sub);margin-bottom:8px}
   .refine-title b{color:var(--txt)}
+  .fchips{display:flex;flex-wrap:wrap;gap:6px}
+  .fchip{display:inline-flex;align-items:stretch}
+  .fchip .fmain{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-right:none;border-radius:9px 0 0 9px;background:var(--card);cursor:pointer;font-size:13.5px;color:var(--txt)}
+  .fchip .fmain code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;font-weight:700}
+  .fchip .fplus{padding:6px 10px;border:1px solid var(--line);border-radius:0 9px 9px 0;background:var(--card);cursor:pointer;font-size:14px;color:var(--sub)}
+  .fchip .fmain:hover,.fchip .fplus:hover{border-color:var(--sub)}
   .tool-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .tool-title{font-size:14px;font-weight:700;color:var(--txt);flex:1}
   .tool-state{display:block;margin-top:3px;font-size:11.5px;font-weight:400;color:var(--sub)}
@@ -301,6 +307,10 @@
     </div>
   </section>
   <button class="trauma-open" id="openTrauma" type="button"><b>外傷小人圖</b>：點一下重新選部位</button>
+  <div class="refine hide" id="chipsPanel">
+    <div class="refine-title" id="chipsTitle"><b>常用骨折快選</b></div>
+    <div class="fchips" id="chipsWrap"></div>
+  </div>
   <div class="refine hide" id="refinePanel">
     <div class="refine-title" id="refineTitle"><b>小腿骨折細分</b></div>
     <div class="seg" id="refineSeg"></div>
@@ -849,6 +859,41 @@ function hideRefine(){
   refinePanel.classList.add("hide");
   refineSeg.innerHTML="";
 }
+// ===== 骨折快捷 chips(2026-08-25)：點骨折+部位後，常用精確碼一鍵複製/入籃。資料=lexicon.js FRACTURE_CHIPS =====
+let _CODE_LOOKUP=null;
+function chipEntry(c){ if(!_CODE_LOOKUP){ _CODE_LOOKUP={}; for(const it of IDX) _CODE_LOOKUP[it.e.c]=it.e; } return _CODE_LOOKUP[c]; }
+function hideChips(){ document.getElementById("chipsPanel").classList.add("hide"); document.getElementById("chipsWrap").innerHTML=""; }
+function showFractureChips(part,side){
+  const list=FRACTURE_CHIPS[part]; if(!list) return;
+  const key=side==="right"?"R":side==="left"?"L":"U";
+  const sideText=side?SIDE_LABEL[side]:"未指定側別";
+  document.getElementById("chipsTitle").innerHTML=`<b>常用骨折快選</b> · ${sideText} · 點碼複製、＋加入清單`;
+  const wrap=document.getElementById("chipsWrap");
+  wrap.innerHTML=list.map(([label,codes])=>{
+    const stem=codes[key]||codes.U;
+    const e=chipEntry(stem); if(!e) return "";
+    const ch=e.s7?(e.s7.includes("A")?"A":e.s7[0]):"";
+    const code=buildCode(e.c,ch), zh=variantZh(e,ch);
+    return `<div class="fchip" data-code="${code}" data-zh="${zh}" title="${zh}">`+
+      `<button type="button" class="fmain">${label}<code>${code}</code></button>`+
+      `<button type="button" class="fplus" title="加入本次診斷清單">＋</button></div>`;
+  }).join("");
+  document.getElementById("chipsPanel").classList.remove("hide");
+  wrap.querySelectorAll(".fchip").forEach(d=>{
+    const code=d.dataset.code, zh=d.dataset.zh;
+    d.querySelector(".fmain").onclick=()=>{
+      navigator.clipboard?.writeText(fmtCode(code));
+      pushRecent(code,zh);
+      const c=d.querySelector(".fmain code"), t=c.textContent;
+      c.textContent="✓ 已複製"; clearTimeout(c._t); c._t=setTimeout(()=>{c.textContent=t;},1200);
+    };
+    d.querySelector(".fplus").onclick=()=>{
+      if(!basket.some(x=>x.code===code)){ basket.push({code,zh}); renderBasket(); }
+      const p=d.querySelector(".fplus");
+      p.textContent="✓"; clearTimeout(p._t); p._t=setTimeout(()=>{p.textContent="＋";},1200);
+    };
+  });
+}
 function applyQuery(query,prefixes){
   ACTIVE_PREFIXES = prefixes && prefixes.length ? prefixes : null;
   qel.value=query;
@@ -904,6 +949,7 @@ function chooseSeg(container,attr,value){
 }
 document.querySelectorAll("#injurySeg button").forEach(b=>b.onclick=()=>{
   traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury);
+  if(traumaInjury!=="fracture") hideChips();   // 換到非骨折傷型時收掉骨折快選
   // 多部位模式下每筆記自己的傷型，換傷型只影響「接下來新點的部位」，不重算已選清單
   if(multiMode){ updateTraumaState(`多部位模式 · 新增：${INJURY_LABEL[traumaInjury]}`); }
   else updateTraumaState();
@@ -932,6 +978,8 @@ document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
   const prefixes=applyPartSelection(part,side);
   setTraumaVisible(false);
   hideRefine();
+  hideChips();
+  if(traumaInjury==="fracture" && FRACTURE_CHIPS[part]) showFractureChips(part,side);
   if(!showPartRefine(part,side) && traumaInjury==="fracture" && FRACTURE_REFINES[part]){
     showFractureRefine(part,side,prefixes);
   }
@@ -945,6 +993,7 @@ document.getElementById("clearTrauma").onclick=()=>{
   else updateTraumaState();
   setTraumaVisible(true);
   hideRefine();
+  hideChips();
   search("");
 };
 
@@ -1019,6 +1068,7 @@ multiTog.onclick=()=>{
   multiPanel.classList.toggle("hide",!multiMode);
   document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
   hideRefine();
+  hideChips();
   if(multiMode){
     ACTIVE_PREFIXES=null; qel.value=""; toggleClearBtn(); search("");
     renderMulti();

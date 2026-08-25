@@ -103,6 +103,12 @@
   .refine.hide{display:none}
   .refine-title{font-size:12.5px;color:var(--sub);margin-bottom:8px}
   .refine-title b{color:var(--txt)}
+  .fchips{display:flex;flex-wrap:wrap;gap:6px}
+  .fchip{display:inline-flex;align-items:stretch}
+  .fchip .fmain{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-right:none;border-radius:9px 0 0 9px;background:var(--card);cursor:pointer;font-size:13.5px;color:var(--txt)}
+  .fchip .fmain code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;font-weight:700}
+  .fchip .fplus{padding:6px 10px;border:1px solid var(--line);border-radius:0 9px 9px 0;background:var(--card);cursor:pointer;font-size:14px;color:var(--sub)}
+  .fchip .fmain:hover,.fchip .fplus:hover{border-color:var(--sub)}
   .tool-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .tool-title{font-size:14px;font-weight:700;color:var(--txt);flex:1}
   .tool-state{display:block;margin-top:3px;font-size:11.5px;font-weight:400;color:var(--sub)}
@@ -301,6 +307,10 @@
     </div>
   </section>
   <button class="trauma-open" id="openTrauma" type="button"><b>外傷小人圖</b>：點一下重新選部位</button>
+  <div class="refine hide" id="chipsPanel">
+    <div class="refine-title" id="chipsTitle"><b>常用骨折快選</b></div>
+    <div class="fchips" id="chipsWrap"></div>
+  </div>
   <div class="refine hide" id="refinePanel">
     <div class="refine-title" id="refineTitle"><b>小腿骨折細分</b></div>
     <div class="seg" id="refineSeg"></div>
@@ -573,9 +583,55 @@ const PHRASE_CODE = {
   "cervical cancer":["C53.9"],"nasopharyngeal cancer":["C11.9"],"npc":["C11.9"],
 };
 
+// ===== 骨折快捷 chips(2026-08-25 MVP：腕/髖/踝/足/胸五區，Kiwi 拍板) =====
+// 小人圖點「骨折+部位」後顯示的常用精確碼快選。每顆 chip=[中文短標,{R:右碼,L:左碼,U:未明側碼}]，
+// 碼=官方 billable stem(不含第7碼，顯示時自動補 A 初期照護)。排序原則=unspecified 保底優先(Kiwi 定)，
+// 該段無未明型碼時(如踝/粗隆間只有移位/非移位二分)才列型態對。碼全數經官方表逐一驗證(chipsGuard 守門)。
+const FRACTURE_CHIPS = {
+  wrist:[
+    ["橈骨遠端(未明型)",{R:"S52.501",L:"S52.502",U:"S52.509"}],
+    ["Colles' 骨折",{R:"S52.531",L:"S52.532",U:"S52.539"}],
+    ["Smith's 骨折",{R:"S52.541",L:"S52.542",U:"S52.549"}],
+    ["尺骨遠端(未明型)",{R:"S52.601",L:"S52.602",U:"S52.609"}],
+    ["舟狀骨(未明部位)",{R:"S62.001",L:"S62.002",U:"S62.009"}],
+    ["腕骨(未明)",{R:"S62.101",L:"S62.102",U:"S62.109"}],
+  ],
+  hip:[
+    ["股骨頸(未明部位)",{R:"S72.001",L:"S72.002",U:"S72.009"}],
+    ["粗隆部(未明)",{R:"S72.101",L:"S72.102",U:"S72.109"}],
+    ["粗隆間·移位",{R:"S72.141",L:"S72.142",U:"S72.143"}],
+    ["粗隆間·非移位",{R:"S72.144",L:"S72.145",U:"S72.146"}],
+    ["粗隆下·移位",{R:"S72.21",L:"S72.22",U:"S72.23"}],
+    ["粗隆下·非移位",{R:"S72.24",L:"S72.25",U:"S72.26"}],
+  ],
+  ankle:[
+    ["外踝·移位",{R:"S82.61",L:"S82.62",U:"S82.63"}],
+    ["外踝·非移位",{R:"S82.64",L:"S82.65",U:"S82.66"}],
+    ["內踝·移位",{R:"S82.51",L:"S82.52",U:"S82.53"}],
+    ["內踝·非移位",{R:"S82.54",L:"S82.55",U:"S82.56"}],
+    ["雙踝·移位",{R:"S82.841",L:"S82.842",U:"S82.843"}],
+    ["三踝·移位",{R:"S82.851",L:"S82.852",U:"S82.853"}],
+  ],
+  foot:[
+    ["第5蹠骨·移位",{R:"S92.351",L:"S92.352",U:"S92.353"}],
+    ["第5蹠骨·非移位",{R:"S92.354",L:"S92.355",U:"S92.356"}],
+    ["蹠骨(未明)",{R:"S92.301",L:"S92.302",U:"S92.309"}],
+    ["跟骨(未明型)",{R:"S92.001",L:"S92.002",U:"S92.009"}],
+    ["腳趾(未明)",{R:"S92.911",L:"S92.912",U:"S92.919"}],
+    ["大趾·移位",{R:"S92.401",L:"S92.402",U:"S92.403"}],
+  ],
+  chest:[
+    ["單根肋骨",{R:"S22.31",L:"S22.32",U:"S22.39"}],
+    ["多根肋骨",{R:"S22.41",L:"S22.42",U:"S22.49"}],
+    ["連枷胸",{U:"S22.5"}],
+    ["胸骨(未明部位)",{U:"S22.20"}],
+    ["胸骨體",{U:"S22.22"}],
+  ],
+};
+
 // Node 端：掛到 globalThis，讓 search_core.js 的自由變數解析得到；瀏覽器不進此塊(const 已在同作用域)。
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { SEV_ORDER, SYN, STOP, ABBR, TRAUMA_TYPE, TRAUMA_PART, TRAUMA_MAP, NAMED_BONE, SPECIFIER, EXTRA_SKIP, PHRASE_CODE };
+  module.exports = { SEV_ORDER, SYN, STOP, ABBR, TRAUMA_TYPE, TRAUMA_PART, TRAUMA_MAP, NAMED_BONE, SPECIFIER, EXTRA_SKIP, PHRASE_CODE, FRACTURE_CHIPS };
   Object.assign(globalThis, module.exports);
 }
 
@@ -1430,6 +1486,41 @@ function hideRefine(){
   refinePanel.classList.add("hide");
   refineSeg.innerHTML="";
 }
+// ===== 骨折快捷 chips(2026-08-25)：點骨折+部位後，常用精確碼一鍵複製/入籃。資料=lexicon.js FRACTURE_CHIPS =====
+let _CODE_LOOKUP=null;
+function chipEntry(c){ if(!_CODE_LOOKUP){ _CODE_LOOKUP={}; for(const it of IDX) _CODE_LOOKUP[it.e.c]=it.e; } return _CODE_LOOKUP[c]; }
+function hideChips(){ document.getElementById("chipsPanel").classList.add("hide"); document.getElementById("chipsWrap").innerHTML=""; }
+function showFractureChips(part,side){
+  const list=FRACTURE_CHIPS[part]; if(!list) return;
+  const key=side==="right"?"R":side==="left"?"L":"U";
+  const sideText=side?SIDE_LABEL[side]:"未指定側別";
+  document.getElementById("chipsTitle").innerHTML=`<b>常用骨折快選</b> · ${sideText} · 點碼複製、＋加入清單`;
+  const wrap=document.getElementById("chipsWrap");
+  wrap.innerHTML=list.map(([label,codes])=>{
+    const stem=codes[key]||codes.U;
+    const e=chipEntry(stem); if(!e) return "";
+    const ch=e.s7?(e.s7.includes("A")?"A":e.s7[0]):"";
+    const code=buildCode(e.c,ch), zh=variantZh(e,ch);
+    return `<div class="fchip" data-code="${code}" data-zh="${zh}" title="${zh}">`+
+      `<button type="button" class="fmain">${label}<code>${code}</code></button>`+
+      `<button type="button" class="fplus" title="加入本次診斷清單">＋</button></div>`;
+  }).join("");
+  document.getElementById("chipsPanel").classList.remove("hide");
+  wrap.querySelectorAll(".fchip").forEach(d=>{
+    const code=d.dataset.code, zh=d.dataset.zh;
+    d.querySelector(".fmain").onclick=()=>{
+      navigator.clipboard?.writeText(fmtCode(code));
+      pushRecent(code,zh);
+      const c=d.querySelector(".fmain code"), t=c.textContent;
+      c.textContent="✓ 已複製"; clearTimeout(c._t); c._t=setTimeout(()=>{c.textContent=t;},1200);
+    };
+    d.querySelector(".fplus").onclick=()=>{
+      if(!basket.some(x=>x.code===code)){ basket.push({code,zh}); renderBasket(); }
+      const p=d.querySelector(".fplus");
+      p.textContent="✓"; clearTimeout(p._t); p._t=setTimeout(()=>{p.textContent="＋";},1200);
+    };
+  });
+}
 function applyQuery(query,prefixes){
   ACTIVE_PREFIXES = prefixes && prefixes.length ? prefixes : null;
   qel.value=query;
@@ -1485,6 +1576,7 @@ function chooseSeg(container,attr,value){
 }
 document.querySelectorAll("#injurySeg button").forEach(b=>b.onclick=()=>{
   traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury);
+  if(traumaInjury!=="fracture") hideChips();   // 換到非骨折傷型時收掉骨折快選
   // 多部位模式下每筆記自己的傷型，換傷型只影響「接下來新點的部位」，不重算已選清單
   if(multiMode){ updateTraumaState(`多部位模式 · 新增：${INJURY_LABEL[traumaInjury]}`); }
   else updateTraumaState();
@@ -1513,6 +1605,8 @@ document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
   const prefixes=applyPartSelection(part,side);
   setTraumaVisible(false);
   hideRefine();
+  hideChips();
+  if(traumaInjury==="fracture" && FRACTURE_CHIPS[part]) showFractureChips(part,side);
   if(!showPartRefine(part,side) && traumaInjury==="fracture" && FRACTURE_REFINES[part]){
     showFractureRefine(part,side,prefixes);
   }
@@ -1526,6 +1620,7 @@ document.getElementById("clearTrauma").onclick=()=>{
   else updateTraumaState();
   setTraumaVisible(true);
   hideRefine();
+  hideChips();
   search("");
 };
 
@@ -1600,6 +1695,7 @@ multiTog.onclick=()=>{
   multiPanel.classList.toggle("hide",!multiMode);
   document.querySelectorAll(".zone").forEach(x=>x.classList.remove("on"));
   hideRefine();
+  hideChips();
   if(multiMode){
     ACTIVE_PREFIXES=null; qel.value=""; toggleClearBtn(); search("");
     renderMulti();

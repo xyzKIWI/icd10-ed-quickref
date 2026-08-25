@@ -237,6 +237,29 @@ const cases = [
   ["radial head dislocation","S53.0"],     // head/neck 改寫限骨折語境,勿蓋掉脫臼碼
 ];
 
+// 骨折快捷 chips 守門：每顆 chip 的碼必須存在於官方表，且左右/未明槽位與碼名側別字樣相符
+function chipsGuard(){
+  let ok=true, n=0;
+  const byC={}; for(const it of IDX) byC[it.e.c]=it.e;
+  for(const part in FRACTURE_CHIPS){
+    for(const [label,codes] of FRACTURE_CHIPS[part]){
+      for(const k of ["R","L","U"]){
+        const c=codes[k]; if(!c) continue; n++;
+        const e=byC[c];
+        if(!e){ console.log("❌ chips 守門："+part+"/"+label+"/"+k+" 碼不存在 "+c); ok=false; continue; }
+        if(codes.R&&codes.L){   // 有左右槽位的 chip 才驗側別字樣
+          const want=k==="R"?"right":k==="L"?"left":"unspecified";
+          if(!(" "+e.en.toLowerCase()+" ").includes(want)){
+            console.log("❌ chips 守門："+part+"/"+label+"/"+k+" 側別不符 "+c+" = "+e.en); ok=false;
+          }
+        }
+      }
+    }
+  }
+  console.log((ok?"✅":"❌")+" chips 守門：骨折快捷 "+n+" 碼存在性+側別字樣全驗");
+  return ok;
+}
+
 // 中指守門：middle finger fracture 前3名必須全是「中指本尊」碼，S62.629(中段指骨之未明示手指)不可混入
 function middleFingerGuard(){
   const r=C.searchCore(IDX,"middle finger fracture","all").slice(0,3).map(x=>x[1].e);
@@ -334,5 +357,6 @@ const fingerOk = fingerGuard();
 const midOk = middleFingerGuard();
 const latOk = lateralityGuard();
 const prefixOk = prefixGuard();
+const chipsOk = chipsGuard();
 console.log(`=== ${pass}/${cases.length} 通過 ｜ 平均單次查詢 ${ms.toFixed(1)} ms（${IDX.length} 條目）===`);
-process.exit(pass===cases.length && guardOk && fingerOk && midOk && latOk && prefixOk?0:1);
+process.exit(pass===cases.length && guardOk && fingerOk && midOk && latOk && prefixOk && chipsOk?0:1);
