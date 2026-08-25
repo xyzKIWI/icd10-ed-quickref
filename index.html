@@ -199,13 +199,13 @@
 <main>
   <section class="trauma" aria-label="外傷小人圖">
     <div class="tool-head">
-      <div class="tool-title" id="traumaTitle" title="點此收合">外傷小人圖<span class="caret">▲ 收合</span><span class="tool-state" id="traumaState">撕裂傷 · 自動側別</span></div>
+      <div class="tool-title" id="traumaTitle" title="點此收合">外傷小人圖<span class="caret">▲ 收合</span><span class="tool-state" id="traumaState">挫傷 · 自動側別</span></div>
       <button class="clearbtn" id="clearTrauma" type="button">清除</button>
     </div>
     <div class="seg" id="injurySeg" aria-label="外傷類型">
-      <button type="button" data-injury="contusion">挫傷</button>
+      <button type="button" class="on" data-injury="contusion">挫傷</button>
       <button type="button" data-injury="abrasion">擦傷</button>
-      <button type="button" class="on" data-injury="laceration">撕裂傷</button>
+      <button type="button" data-injury="laceration">撕裂傷</button>
       <button type="button" data-injury="fracture">骨折</button>
       <button type="button" data-injury="sprain">扭傷</button>
       <button type="button" data-injury="burn">燒燙傷</button>
@@ -1306,7 +1306,7 @@ addBurn("foot","T25","foot");
 addBurn("heel","T25","heel foot");
 addBurn("great_toe","T25","toe");
 addBurn("lesser_toes","T25","toe");
-let traumaInjury="laceration", traumaSideMode="auto";
+let traumaInjury="contusion", traumaSideMode="auto";
 const traumaPanel=document.querySelector(".trauma");
 const openTraumaBtn=document.getElementById("openTrauma");
 const refinePanel=document.getElementById("refinePanel");
