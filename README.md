@@ -31,10 +31,11 @@
 
 前（Front）後（Back）人體圖同頁，點部位 → 自動帶出該部位的 ICD 碼段：
 
-- 先選傷型（撕裂傷/挫傷/骨折/扭傷/擦傷/燒燙傷）和側別（自動/未指定/左/右/雙側），再點身體部位
+- 先選傷型（挫傷/擦傷/撕裂傷/骨折/扭傷/燒燙傷，預設挫傷）和側別（自動/未指定/左/右/雙側），再點身體部位
 - **側別標示**：Front 左 Rt 右 Lt；Back 為背面故相反（左 Lt 右 Rt）。點下去會依解剖正確的左右帶碼
 - 點部位後用既有搜尋核心做「碼段白名單」硬過濾，查無不會 fallback 全域（防帶錯碼）
 - 骨頭等內部構造（tibia/fibula、radius/ulna）用點選後的情境式細分按鈕處理
+- **骨折快捷快選（chips）**：選「骨折」點腕/髖/踝/足/胸時，面板先列該部位常用精確碼（自動帶側別與第 7 碼 A，如左腕→「Colles' 骨折 S52.532A」）；點碼直接複製、點「＋」加入多碼籃；完整展開仍走下方結果卡與細分鈕。chips 碼全數經官方表逐碼驗證（chipsGuard 守門）
 - 開始搜尋後小人圖自動收合以保留結果版面
 - 點部位時分頁自動切到「外傷」；之後直接打字查下一個診斷會**自動切回「全部」**，不必手動換分頁（若是自己手動點的「外傷」分頁則保留不動）
 
@@ -54,7 +55,7 @@
   - **同分排序規則**：分數相同時 unspecified／未明示碼優先、碼名多餘條件少者優先（急診常用未明示碼自動上浮，不必逐條釘）
   - **PHRASE_CODE**：臨床慣用語直接置頂（nasal bleeding→R04.0、coma→R40.20、stroke→I63.9、overdose→T50.90x、無力→R53.1、意識不清/unconscious→R41.82…）
   - **縮寫稽核**：aod→主動脈剝離、aom→急性中耳炎、ptx/htx、vf、bppv、brbpr、appy、t1dm/t2dm、ptb 等；展開字串貼官方碼名（aod 用 dissection of aorta 而非 aortic dissection 以免混進腫瘤）；歧義過高者（ad/ap/ra/oa…）刻意不收
-- **打字外傷語意層**：打字命中「傷型詞（挫傷/擦傷/裂傷/骨折/鈍傷/血腫…）＋部位詞（顏面/胸/背/四肢…）」時，比照小人圖套用「部位×傷型→碼段白名單」硬過濾，杜絕中文外傷措辭滑進燒傷 T2x／生產傷害 P／大腦 S06／皮膚癌 C44。具名長骨的「遠端/近端/平台/Colles」自動轉成 ICD 官方「lower/upper end of 骨」（distal radius→S52.5、tibia plateau→S82.1）。
+- **打字外傷語意層**：打字命中「傷型詞（挫傷/擦傷/裂傷/骨折/鈍傷/血腫…）＋部位詞（顏面/胸/背/四肢…）」時，比照小人圖套用「部位×傷型→碼段白名單」硬過濾，杜絕中文外傷措辭滑進燒傷 T2x／生產傷害 P／大腦 S06／皮膚癌 C44。具名長骨的「遠端/近端/平台/Colles」自動轉成 ICD 官方「lower/upper end of 骨」（distal radius→S52.5、tibia plateau→S82.1）。手指序數自動對應（1st–5th finger→拇指/食指/中指/無名指/小指，middle finger 併片語比對不與「中段指骨」混淆）；骨折語境下骨名形容詞自動轉名詞形（fibular/humeral/femoral/tibial/clavicular…→官方 fibula/humerus 碼名，radial styloid、tibial spine 等官方形容詞構造除外）；cont（=contusion）僅在句中有部位詞時展開，避免誤吃 contact dermatitis。
 - **效能**：38k 條目單次查詢約 30 ms（indexOf 快篩 + 閘門化模糊比對）。
 - **單檔內嵌**：資料、搜尋邏輯、兩張底圖（base64）全部內嵌進 HTML（file:// 下瀏覽器擋外部 JSON 的 CORS）。搜尋邏輯抽成 `search_core.js`、詞表（同義詞/縮寫/片語/外傷部位表）抽成 `lexicon.js`，HTML 與測試共用同一份——加詞只動 `lexicon.js`。
 
@@ -84,7 +85,7 @@ python3 src/build_figure.py    # zones json → 寫進 template.html 的兩個 S
 python3 src/build_html.py      # 注入 icd_data.json + lexicon.js + search_core.js + 兩張底圖 base64 → dist/icd_ed.html
 
 # ── 4. 測試 ──────────────────────────────────────────────
-node src/test_search.js        # 194 案例 + 極性/側別/手指/prefix 守門，應全過
+node src/test_search.js        # 221 案例 + 極性/側別/手指/中指/prefix/chips 守門，應全過
 
 # ── 5. 上線（GitHub Pages）────────────────────────────────
 cp dist/icd_ed.html index.html
@@ -123,7 +124,7 @@ src/
   build_figure.py   zones json → 寫進 template.html 的 SVG（側別映射）
   template.html     UI（CSS + SVG 小人圖 + JS）
   build_html.py     注入資料 + 詞表 + 邏輯 + 底圖 base64 → dist/icd_ed.html
-  test_search.js    194 案例 + 守門函式
+  test_search.js    221 案例 + 守門函式
 design/
   chart_{front,back}_final.png   小人圖乾淨底圖（內嵌進成品）
   zones_{front,back}.json        熱區多邊形座標
