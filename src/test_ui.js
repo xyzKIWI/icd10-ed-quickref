@@ -15,19 +15,20 @@ function setup(){
   return {context,nodes};
 }
 const entry={c:'S50.12',en:'Contusion of left forearm',zh:'左前臂挫傷',s7:'ADS',k:'inj'};
-test('injury cards require a deliberate encounter selection',()=>{
+test('injury cards default to A and copy by clicking the code itself',()=>{
   const {context}=setup();
   const html=context.card(core.indexEntry(entry,'inj'),core.norm('left forearm contusion'),0,'left forearm contusion');
-  assert.match(html,/data-code=""/);
-  assert.match(html,/id="copy0" disabled/);
-  assert.match(html,/id="add0" disabled/);
-  assert.doesNotMatch(html,/S50\.12XA/);
+  assert.match(html,/data-code="S50\.12XA"/);
+  assert.match(html,/class="code"[^>]+onclick="cardCopy\(0\)"/);
+  assert.doesNotMatch(html,/class="copybtn"/);
+  assert.doesNotMatch(html,/>複製代碼<\/button>/);
+  assert.doesNotMatch(html,/id="add0" disabled/);
 });
 test('an explicit complete code retains its seventh character',()=>{
   const {context}=setup();
   const html=context.card(core.indexEntry(entry,'inj'),[],0,'S50.12XS');
   assert.match(html,/data-code="S50\.12XS"/);
-  assert.doesNotMatch(html,/id="copy0" disabled/);
+  assert.doesNotMatch(html,/class="code"[^>]+disabled/);
 });
 test('simple open fracture seventh character B does not invent a Gustilo subtype',()=>{
   const {context}=setup();
@@ -58,6 +59,11 @@ test('clipboard denial is reported as failure rather than success',async()=>{
   assert.equal(await context.copyText('S5012XA'),false);
   assert.match(nodes.status.textContent,/無法/);
   assert.doesNotMatch(nodes.status.textContent,/已複製/);
+});
+test('multi-site trauma copies from the rendered ICD-10 code instead of opening candidates',()=>{
+  assert.match(template,/class="mcode" onclick="multiCopy\(\$\{i\},this\)"/);
+  assert.match(template,/async function multiCopy\(i,button\)/);
+  assert.doesNotMatch(template,/function multiCopy\(i\)\{[\s\S]{0,240}applyQuery/);
 });
 test('feedback does not auto-submit or persist query and note',()=>{
   assert.doesNotMatch(template,/formResponse|no-cors|localStorage\.setItem\(["']fb["']/);

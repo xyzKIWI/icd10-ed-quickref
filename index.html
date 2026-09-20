@@ -23,7 +23,6 @@
   button:disabled{cursor:not-allowed;opacity:.65}
   .query-warning{border:1px solid var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:10px;color:var(--txt);background:var(--panel);font-size:14px;line-height:1.6}
   .query-group{font-size:14px;color:var(--sub);margin:18px 0 10px;overflow-wrap:anywhere}
-  .copybtn{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;padding:3px 6px}
   #status{font-size:13px;color:var(--warn);margin:8px 2px;line-height:1.5}
   body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
        background:var(--bg);color:var(--txt);-webkit-text-size-adjust:100%}
@@ -46,9 +45,8 @@
   .scope button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
   main{padding:10px 12px 90px;max-width:760px;margin:0 auto}
   .card{background:var(--card);border:1px solid var(--line);border-radius:13px;
-        padding:12px 13px;margin-bottom:10px;cursor:pointer;transition:border-color .1s,background .1s}
+        padding:12px 13px;margin-bottom:10px;transition:border-color .1s,background .1s}
   .card:hover{border-color:var(--accent)}
-  .card:active{background:var(--panel)}
   .cphint{font-size:10px;color:var(--muted);margin-left:auto}
   .addbtn{font-size:11px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);
         background:var(--field);color:var(--accent);cursor:pointer;font-weight:600}
@@ -86,7 +84,7 @@
   .fbcount{font-size:12px;color:var(--sub);margin-left:auto}
   .row1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
   .code{font-family:ui-monospace,Menlo,monospace;font-size:21px;font-weight:700;color:var(--code);
-        letter-spacing:.5px;cursor:pointer}
+        letter-spacing:.5px;cursor:pointer;border:0;background:none;padding:0}
   .code:active{opacity:.6}
   .copyok{color:var(--hit);font-size:12px;margin-left:4px}
   .en{font-size:15px;margin-top:5px}
@@ -147,13 +145,13 @@
   .multi.hide{display:none}
   .multi-title{font-size:13px;color:var(--sub);margin-bottom:8px}
   .multi-title b{color:var(--txt)}
-  .multi-row{display:flex;align-items:center;gap:10px;padding:9px 6px;font-size:15px;border-bottom:1px dashed var(--line);cursor:pointer;border-radius:6px}
+  .multi-row{display:flex;align-items:center;gap:10px;padding:9px 6px;font-size:15px;border-bottom:1px dashed var(--line);border-radius:6px}
   .multi-row:hover{background:var(--card)}
   .multi-row:hover .mcode{text-decoration:underline}
   .multi-row:last-of-type{border-bottom:none}
   .multi-row .mok{color:var(--accent);font-size:13px;font-weight:700;white-space:nowrap}
   .multi-row .mlabel{color:var(--sub);white-space:nowrap;font-size:14px}
-  .multi-row .mcode{font-family:ui-monospace,Menlo,monospace;font-size:18px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .multi-row .mcode{font-family:ui-monospace,Menlo,monospace;font-size:18px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap;border:0;background:none;padding:0;cursor:pointer}
   .multi-row .mzh{flex:1;color:var(--txt);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .multi-row .mdel{border:none;background:none;color:var(--sub);cursor:pointer;font-size:16px;padding:2px 6px}
   .multi-actions{display:flex;gap:8px;margin-top:9px}
@@ -308,10 +306,10 @@
       </div>
     </div>
     <div class="multi hide" id="multiPanel">
-      <div class="multi-title"><b>多部位清單</b>：先選傷型再點部位可累積。點列檢視候選碼，確認診斷條件與照護階段後加入診斷清單。</div>
+      <div class="multi-title"><b>多部位清單</b>：先選傷型再點部位可累積；直接點 ICD-10 碼即可複製。</div>
       <div id="multiList"></div>
       <div class="multi-actions">
-        <button type="button" id="multiAddAll">逐項確認代碼</button>
+        <button type="button" id="multiAddAll">展開候選碼</button>
         <button type="button" id="multiClearBtn">清除部位</button>
       </div>
     </div>
@@ -1162,17 +1160,17 @@ function encounterChoice(e,q){
   if(!isFracture){
     if(subsequent) return chosen("D","已辨識為後續照護。");
     if(initial) return chosen("A","已辨識為初期照護。");
-    return {value:"",needsChoice:true,message:"此代碼需要第7碼；請選擇初期、後續或後遺症。"};
+    return chosen("A","未指定照護階段，依急診流程預設為初期照護。");
   }
 
   const healing=delayed?"delayed":nonunion?"nonunion":malunion?"malunion":"routine";
   // 有些骨折碼只用 B 表示所有開放性骨折（s7 有 B、沒有 C），不再細分 Gustilo。
   const distinguishesOpenType=allowed.includes("C");
+  if(!initial && !subsequent){
+    return chosen("A","未指定照護階段，依急診流程預設為初期照護。");
+  }
   if(open && distinguishesOpenType && !open12 && !open3){
     return {value:"",needsChoice:true,message:"開放性骨折需確認 Gustilo I/II 或 IIIA-C，不能自動猜第7碼。"};
-  }
-  if(!initial && !subsequent){
-    return {value:"",needsChoice:true,message:"骨折代碼需確認初期/後續/後遺症；未指定時不預設 A。"};
   }
   if(initial){
     if(open && !distinguishesOpenType) return chosen("B","已辨識為初期照護之開放性骨折；此候選不細分 Gustilo 型別。");
@@ -1389,7 +1387,7 @@ function card(item,qtoks,i,query=""){
   }
   const miss = needMore(e) ? `<div class="miss">⚠ ${esc(needMore(e))}</div>` : "";
   return `<article class="card" id="c${i}" data-stem="${e.c}">
-    <div class="row1"><span class="code" id="code${i}" data-code="${code}">${code||e.c+"…"}</span>${tag}<button class="addbtn" id="add${i}" ${choice.needsChoice?'disabled':''} onclick="addToBasket(${i})">＋ 清單</button><button class="copybtn" id="copy${i}" ${choice.needsChoice?'disabled':''} onclick="cardCopy(${i})">複製代碼</button><span class="cphint">${choice.needsChoice?'請先選照護階段':''}</span></div>
+    <div class="row1"><button type="button" class="code" id="code${i}" data-code="${code}" ${choice.needsChoice?'disabled':''} onclick="cardCopy(${i})" title="點一下複製代碼" aria-label="複製 ICD-10 代碼 ${esc(code||e.c)}">${code||e.c+"…"}</button>${tag}<button class="addbtn" id="add${i}" ${choice.needsChoice?'disabled':''} onclick="addToBasket(${i})">＋ 清單</button><span class="cphint">${choice.needsChoice?'請先選照護階段':'點代碼複製'}</span></div>
     <div class="en">${esc(e.en)}</div>
     <div class="zh" id="zh${i}">${esc(variantZh(e,def))}</div>
     ${why?`<div class="why">命中：<b>${esc(why)}</b></div>`:""}
@@ -1407,7 +1405,7 @@ function pick(i,ch){
   document.getElementById("zh"+i).textContent=variantZh(e,ch);
   card.querySelectorAll(".chip").forEach(c=>{const on=c.textContent.trim().startsWith(ch+" ")||c.textContent.trim()===ch;c.classList.toggle("on",on);c.setAttribute("aria-pressed",String(on));});
   document.getElementById("add"+i).disabled=false;
-  document.getElementById("copy"+i).disabled=false;
+  el.disabled=false;
   card.querySelector(".cphint").textContent="";
   card.querySelector(".encounter-message").textContent="";
 }
@@ -2035,7 +2033,9 @@ function multiSuggest(part,side,injury){
   if(!r.length) return null;
   const e=r[0][1].e;
   if(!validCode(e.c))return null;
-  return {code:e.c, zh:e.zh,query:q,prefixes};
+  const chars=e.s7 ? e.s7.split("") : [""];
+  const def=chars.includes("A") ? "A" : chars[0];
+  return {code:buildCode(e.c,def), zh:variantZh(e,def),query:q,prefixes};
 }
 function multiLabel(s){
   return (s.side ? SIDE_LABEL[s.side] : "")+PART_LABEL[s.part]+" "+INJURY_LABEL[s.injury];
@@ -2048,16 +2048,20 @@ function renderMulti(){
   multiListEl.innerHTML=multiSel.map((s,i)=>{
     const sug=multiSuggest(s.part,s.side,s.injury);
     const body=sug
-      ? `<span class="mcode">${fmtCode(sug.code)}…</span><span class="mzh">${esc(sug.zh)}</span>`
+      ? `<button type="button" class="mcode" onclick="multiCopy(${i},this)" title="點一下複製代碼" aria-label="複製 ICD-10 代碼 ${esc(fmtCode(sug.code))}">${fmtCode(sug.code)}</button><span class="mzh">${esc(sug.zh)}</span>`
       : `<span class="mzh">此部位無「${INJURY_LABEL[s.injury]}」對應碼</span>`;
-    return `<div class="multi-row"><button type="button" class="copybtn" onclick="multiCopy(${i})">${esc(multiLabel(s))}：確認</button>${body}<button type="button" class="mdel" onclick="multiRemove(${i})" aria-label="移除 ${esc(multiLabel(s))}" title="移除">✕</button></div>`;
+    return `<div class="multi-row"><span class="mlabel">${esc(multiLabel(s))}</span>${body}<button type="button" class="mdel" onclick="multiRemove(${i})" aria-label="移除 ${esc(multiLabel(s))}" title="移除">✕</button></div>`;
   }).join("");
 }
-function multiCopy(i){
+async function multiCopy(i,button){
   const s=multiSel[i]; if(!s) return;
   const sug=multiSuggest(s.part,s.side,s.injury); if(!sug) return;
-  applyQuery(sug.query,sug.prefixes);
-  document.getElementById("out").scrollIntoView({block:"start"});
+  const out=fmtCode(sug.code);
+  if(!await copyText(out))return;
+  pushRecent(sug.code,sug.zh);
+  const original=button.textContent;
+  button.textContent="✓ "+out;
+  clearTimeout(button._t); button._t=setTimeout(()=>{button.textContent=original;},1300);
 }
 function multiRemove(i){
   const s=multiSel.splice(i,1)[0];

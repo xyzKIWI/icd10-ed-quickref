@@ -138,15 +138,15 @@ assert.deepStrictEqual(a.queries,["type 2 diabetes with CKD3","CKD3"]);
 a=C.analyzeQuery("sepsis due to UTI");
 assert.deepStrictEqual(a.queries,["sepsis","UTI"]);
 
-// 第7碼：未指定不預設 A；明確階段才自動選，開放骨折型別不足時不可猜。
+// 第7碼：未指定時依急診流程預設 A；明確階段仍沿用輸入判斷。
 const contusion=entry("S50.12"), tibiaFx=entry("S82.202");
 assert.deepStrictEqual(C.encounterChoice(contusion,"left forearm contusion"),{
-  value:"",needsChoice:true,message:"此代碼需要第7碼；請選擇初期、後續或後遺症。"
+  value:"A",needsChoice:false,message:"未指定照護階段，依急診流程預設為初期照護。"
 });
 assert.strictEqual(C.encounterChoice(contusion,"left forearm contusion subsequent encounter").value,"D");
 assert.strictEqual(C.encounterChoice(contusion,"left forearm contusion sequela").value,"S");
 assert.strictEqual(C.encounterChoice(contusion,"S50.12XD").value,"D");
-assert.strictEqual(C.encounterChoice(tibiaFx,"open fracture left tibia").needsChoice,true);
+assert.strictEqual(C.encounterChoice(tibiaFx,"open fracture left tibia").value,"A");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial open fracture Gustilo type II").value,"B");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial open fracture Gustilo IIIA").value,"C");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial open displaced fracture").needsChoice,true);
@@ -156,7 +156,7 @@ assert.strictEqual(C.encounterChoice(tibiaFx,"初期照護 開放性脛骨骨折
 assert.strictEqual(C.encounterChoice(tibiaFx,"subsequent open fracture Gustilo II routine healing").value,"E");
 assert.strictEqual(C.encounterChoice(tibiaFx,"subsequent closed fracture with nonunion").value,"K");
 assert.strictEqual(C.encounterChoice(tibiaFx,"S82.202B").value,"B");
-assert.strictEqual(C.encounterChoice(tibiaFx,"首次就醫之左脛骨骨折").needsChoice,true);
+assert.strictEqual(C.encounterChoice(tibiaFx,"首次就醫之左脛骨骨折").value,"A");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial fracture with type 2 diabetes").value,"A");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial closed fracture type II").value,"A");
 assert.strictEqual(C.encounterChoice(tibiaFx,"initial closed fracture Gustilo type II").needsChoice,true);

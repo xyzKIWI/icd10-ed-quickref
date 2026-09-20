@@ -423,17 +423,17 @@ function encounterChoice(e,q){
   if(!isFracture){
     if(subsequent) return chosen("D","已辨識為後續照護。");
     if(initial) return chosen("A","已辨識為初期照護。");
-    return {value:"",needsChoice:true,message:"此代碼需要第7碼；請選擇初期、後續或後遺症。"};
+    return chosen("A","未指定照護階段，依急診流程預設為初期照護。");
   }
 
   const healing=delayed?"delayed":nonunion?"nonunion":malunion?"malunion":"routine";
   // 有些骨折碼只用 B 表示所有開放性骨折（s7 有 B、沒有 C），不再細分 Gustilo。
   const distinguishesOpenType=allowed.includes("C");
+  if(!initial && !subsequent){
+    return chosen("A","未指定照護階段，依急診流程預設為初期照護。");
+  }
   if(open && distinguishesOpenType && !open12 && !open3){
     return {value:"",needsChoice:true,message:"開放性骨折需確認 Gustilo I/II 或 IIIA-C，不能自動猜第7碼。"};
-  }
-  if(!initial && !subsequent){
-    return {value:"",needsChoice:true,message:"骨折代碼需確認初期/後續/後遺症；未指定時不預設 A。"};
   }
   if(initial){
     if(open && !distinguishesOpenType) return chosen("B","已辨識為初期照護之開放性骨折；此候選不細分 Gustilo 型別。");
