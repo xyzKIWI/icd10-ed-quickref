@@ -2,6 +2,12 @@
 data/
 build/
 dist/
+__pycache__/
+*.pyc
+.wrangler/
+.env
+.env.*
+!.env.example
 *.xlsx
 *.zip
 *.corrupted_bak

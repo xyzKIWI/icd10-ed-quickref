@@ -39,7 +39,7 @@ const ABBR = {
   // 感染/呼吸
   "uti":"urinary tract infection","urti":"upper respiratory infection","uri":"upper respiratory infection",
   "copd":"chronic obstructive pulmonary","cap":"pneumonia","hap":"pneumonia","ards":"respiratory distress",
-  "tb":"tuberculosis","sob":"dyspnea","uri":"upper respiratory infection",
+  "tb":"tuberculosis","sob":"dyspnea","uri":"upper respiratory infection","pna":"pneumonia",
   // 心血管
   "chf":"heart failure","cad":"coronary artery","acs":"acute coronary",
   "mi":"myocardial infarction","ami":"myocardial infarction","stemi":"st elevation myocardial infarction",
@@ -54,9 +54,11 @@ const ABBR = {
   "lgib":"gastrointestinal hemorrhage","gerd":"gastroesophageal reflux","pud":"peptic ulcer",
   "gb":"gallbladder","ibd":"inflammatory bowel","sbo":"intestinal obstruction","lbo":"intestinal obstruction",
   // 內分泌/腎/其他
-  "dm":"diabetes","dka":"diabetes ketoacidosis","hhs":"hyperosmolar hyperglycemia",
-  "ckd":"chronic kidney","aki":"acute kidney failure","esrd":"end stage renal","arf":"acute kidney failure",
+  "dm":"diabetes","niddm":"type 2 diabetes","dka":"diabetes ketoacidosis","hhs":"hyperosmolar hyperglycemia",
+  "ckd":"chronic kidney","ckd3":"chronic kidney disease stage 3","ckd3a":"chronic kidney disease stage 3a",
+  "ckd3b":"chronic kidney disease stage 3b","aki":"acute kidney failure","esrd":"end stage renal","arf":"acute kidney failure",
   "bph":"benign prostatic hyperplasia","pid":"pelvic inflammatory","cp":"chest pain","abd":"abdominal",
+  "oa":"osteoarthritis","ra":"rheumatoid arthritis","hfref":"systolic heart failure","hfpef":"diastolic heart failure",
   // 急診高頻縮寫補入
   "age":"gastroenteritis","pn":"pneumonia","ugi":"upper gastrointestinal",
   "aur":"retention urine","apn":"acute pyelonephritis","lbp":"low back pain",
@@ -83,6 +85,70 @@ const ABBR = {
   "luts":"lower urinary tract symptoms",
   "ppu":"peptic ulcer perforation",                 // 官方碼名用 perforation 非 perforated
 };
+
+// 查詢正規化：先做 NFKC，再由長詞到短詞替換。只收錄會影響安全排序的高頻詞，
+// 不嘗試把整套中文斷詞塞進搜尋核心。
+const QUERY_REWRITES = [
+  ["慢性腎臟病第三a期"," chronic kidney disease stage 3a "],
+  ["慢性腎臟病第三b期"," chronic kidney disease stage 3b "],
+  ["慢性腎臟病第3a期"," chronic kidney disease stage 3a "],
+  ["慢性腎臟病第3b期"," chronic kidney disease stage 3b "],
+  ["慢性腎臟病第三期"," chronic kidney disease stage 3 "],
+  ["慢性腎臟病第3期"," chronic kidney disease stage 3 "],
+  ["慢性腎病第三期"," chronic kidney disease stage 3 "],
+  ["慢性腎臟病"," chronic kidney disease "],
+  ["慢性腎病"," chronic kidney disease "],
+  ["第二型糖尿病"," type 2 diabetes "],
+  ["第2型糖尿病"," type 2 diabetes "],
+  ["二型糖尿病"," type 2 diabetes "],
+  ["慢性阻塞性肺病"," chronic obstructive pulmonary disease "],
+  ["慢性阻塞性肺疾病"," chronic obstructive pulmonary disease "],
+  ["冠狀動脈疾病"," coronary artery disease "],
+  ["冠心病"," coronary artery disease "],
+  ["泌尿道感染症"," urinary tract infection "],
+  ["泌尿道感染"," urinary tract infection "],
+  ["尿路感染"," urinary tract infection "],
+  ["良性攝護腺增生"," benign prostatic hyperplasia "],
+  ["良性前列腺增生"," benign prostatic hyperplasia "],
+  ["攝護腺肥大"," benign prostatic hyperplasia "],
+  ["前列腺肥大"," benign prostatic hyperplasia "],
+  ["退化性關節炎"," osteoarthritis "],
+  ["胃食道逆流"," gastroesophageal reflux "],
+  ["胃酸逆流"," gastroesophageal reflux "],
+  ["脂肪肝"," fatty liver "],
+  ["股骨頸骨折"," femur neck fracture "],
+  ["橈骨"," radius "],["尺骨"," ulna "],["肱骨"," humerus "],["股骨"," femur "],
+  ["脛骨"," tibia "],["腓骨"," fibula "],["鎖骨"," clavicle "],["髕骨"," patella "],
+  ["遠端"," distal "],["近端"," proximal "],["骨折"," fracture "],
+  ["高血壓"," hypertension "],
+  ["糖尿病"," diabetes "],
+  ["左側"," left "],["右側"," right "],["雙側"," bilateral "],
+  ["合併"," with "],
+];
+
+// 這些縮寫不應默默當成單一確診；UI 仍可顯示候選，但必須提示使用者確認語意。
+const AMBIGUOUS_ABBR = {
+  "cp":"CP 可能代表胸痛或腦性麻痺，請確認本次語意。",
+  "pe":"PE 可能代表肺栓塞或理學檢查，請確認本次語意。",
+  "ra":"RA 可能代表類風濕性關節炎或右心房，請確認本次語意。",
+  "oa":"OA 常指骨關節炎，但仍可能有其他院內縮寫，請確認。",
+  "af":"AF 可能代表心房顫動或羊水等其他語意，請確認。",
+  "ms":"MS 可能代表多發性硬化、二尖瓣狹窄等，請改用完整診斷。",
+  "ca":"CA 可能代表癌症、鈣或心跳停止，請改用完整診斷。",
+  "loc":"LOC 可能代表意識喪失或意識程度，請確認。",
+  "pn":"PN 可能代表肺炎或周邊神經病變，請確認。",
+  "pta":"PTA 可能代表扁桃腺周圍膿瘍、經皮血管成形術或其他院內縮寫，請改用全名。",
+  "dm":"DM 未標示糖尿病型別；若已知第 1/第 2 型，請補充。",
+};
+
+// 碼名有這些限定詞、查詢卻沒提到時降權，避免把一般疾病自動升級成併發症或特殊病因。
+const SAFETY_QUALIFIERS = [
+  ["hyperglycemia",0.34],["ketoacidosis",0.34],["hyperosmolarity",0.34],
+  ["neuropathy",0.28],["retinopathy",0.28],["nephropathy",0.28],["complication",0.24],
+  ["exacerbation",0.34],["infection",0.16],["angina",0.30],["bypass",0.30],["transplanted",0.30],
+  ["alcoholic",0.38],["esophagitis",0.30],["bleeding",0.22],["perforation",0.22],["gangrene",0.22],
+  ["pregnancy",0.42],["pregnant",0.42],["childbirth",0.42],["puerperium",0.42],["postpartum",0.42],
+];
 
 // ===== 外傷語意層(2026-07-08 真實病歷大審計治本) =====
 // 打字查外傷時，比照小人圖用「部位×傷型→碼段白名單」硬過濾，杜絕中文措辭滑進燒傷 T2x/生產傷害 P/
@@ -161,7 +227,7 @@ const TRAUMA_MAP = {
   multilimb:S(["S50","S80","S70","S40"],["S51","S81","S71","S41"],["S52","S82","S72","S42"]),   // 前臂/小腿優先(多處擦挫傷常見肢端)
 };
 // 具名長骨：命中則骨折交回一般搜尋(那條路徑更精準,且避免 radial head/femoral neck 的 head/neck 被誤判成部位)
-const NAMED_BONE = /radi(us|al)|ulnar?|humer(us|al)|femur|femoral|tibial?|fibular?|clavicl|patella|metacarp|metatars|phalan|carpal|tarsal|scaphoid|malleol|styloid|olecranon|calcane|navicular|sternum|vertebra|sacr|coccyx/i;
+const NAMED_BONE = /radi(us|al)|ulnar?|humer(us|al)|femur|femoral|tibial?|fibular?|clavicl|patella|metacarp|metatars|phalan|carpal|tarsal|scaphoid|malleol|styloid|olecranon|calcane|navicular|sternum|vertebra|sacr|coccyx|股骨|橈骨|尺骨|肱骨|脛骨|腓骨|鎖骨|髕骨|掌骨|蹠骨|指骨|舟狀骨|跟骨/i;
 
 // 專一構造詞：碼名有、但 query 沒提 → 該碼較專一，往下壓（優先單純傷口/部位碼）
 const SPECIFIER = ["tendon","muscle","fascia","ligament","artery","vein","nerve","vessel",
@@ -171,6 +237,31 @@ const EXTRA_SKIP = new Set(["unspecified","without","other","not","elsewhere","c
 
 // 片語直接對應碼：關鍵字比對救不了的臨床慣用語，直接指定正確碼置頂(臨床回饋持續補)
 const PHRASE_CODE = {
+  // 保守預設：沒有併發症/病因/急性惡化等限定詞時，不替使用者擅加更特異條件。
+  "dm":["E11.9"],"t2dm":["E11.9"],"niddm":["E11.9"],"diabetes":["E11.9"],
+  "type 2 diabetes":["E11.9"],"type 2 diabetes mellitus":["E11.9"],
+  "糖尿病":["E11.9"],"第二型糖尿病":["E11.9"],"第2型糖尿病":["E11.9"],
+  "copd":["J44.9"],"chronic obstructive pulmonary":["J44.9"],"chronic obstructive pulmonary disease":["J44.9"],
+  "慢性阻塞性肺病":["J44.9"],"慢性阻塞性肺疾病":["J44.9"],
+  "cad":["I25.10"],"coronary artery disease":["I25.10"],"冠狀動脈疾病":["I25.10"],"冠心病":["I25.10"],
+  "fatty liver":["K76.0"],"脂肪肝":["K76.0"],
+  "gerd":["K21.9"],"gastroesophageal reflux":["K21.9"],"gastroesophageal reflux disease":["K21.9"],
+  "胃食道逆流":["K21.9"],"胃酸逆流":["K21.9"],
+  "uti":["N39.0"],"urinary tract infection":["N39.0"],"泌尿道感染":["N39.0"],"泌尿道感染症":["N39.0"],"尿路感染":["N39.0"],
+  "bph":["N40.0"],"benign prostatic hyperplasia":["N40.0"],"攝護腺肥大":["N40.0"],"前列腺肥大":["N40.0"],
+  "oa":["M19.90"],"osteoarthritis":["M19.90"],"退化性關節炎":["M19.90"],
+  "ra":["M06.9"],"rheumatoid arthritis":["M06.9"],
+  "pna":["J18.9"],"community acquired pneumonia":["J18.9"],
+  "ckd3":["N18.30"],"ckd 3":["N18.30"],"ckd stage 3":["N18.30"],"chronic kidney disease stage 3":["N18.30"],
+  "ckd3a":["N18.31"],"ckd 3a":["N18.31"],"ckd stage 3a":["N18.31"],"chronic kidney disease stage 3a":["N18.31"],
+  "ckd3b":["N18.32"],"ckd 3b":["N18.32"],"ckd stage 3b":["N18.32"],"chronic kidney disease stage 3b":["N18.32"],
+  "慢性腎臟病第三期":["N18.30"],"慢性腎臟病第3期":["N18.30"],
+  "hfref":["I50.20"],"hfrEF":["I50.20"],"systolic heart failure":["I50.20"],
+  "hfpef":["I50.30"],"diastolic heart failure":["I50.30"],
+  // 中文具名長骨片語；避免把「股骨頸」拆成頸椎/頸部。
+  "femur neck fracture":["S72.009"],"left femur neck fracture":["S72.002"],"right femur neck fracture":["S72.001"],
+  "股骨頸骨折":["S72.009"],"左股骨頸骨折":["S72.002"],"左側股骨頸骨折":["S72.002"],
+  "右股骨頸骨折":["S72.001"],"右側股骨頸骨折":["S72.001"],
   "nasal bleeding":["R04.0"],"nose bleeding":["R04.0"],"nosebleed":["R04.0"],"nose bleed":["R04.0"],
   "gum bleeding":["K06.8"],"gingival bleeding":["K06.8"],"bleeding gum":["K06.8"],"bleeding gums":["K06.8"],
   // ask-all P0 臨床安全(2026-06-23)：純關鍵字排序救不了，強制置頂正確碼
@@ -298,6 +389,7 @@ const FRACTURE_CHIPS = {
 
 // Node 端：掛到 globalThis，讓 search_core.js 的自由變數解析得到；瀏覽器不進此塊(const 已在同作用域)。
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { SEV_ORDER, SYN, STOP, ABBR, TRAUMA_TYPE, TRAUMA_PART, TRAUMA_MAP, NAMED_BONE, SPECIFIER, EXTRA_SKIP, PHRASE_CODE, FRACTURE_CHIPS };
+  module.exports = { SEV_ORDER, SYN, STOP, ABBR, QUERY_REWRITES, AMBIGUOUS_ABBR, SAFETY_QUALIFIERS,
+    TRAUMA_TYPE, TRAUMA_PART, TRAUMA_MAP, NAMED_BONE, SPECIFIER, EXTRA_SKIP, PHRASE_CODE, FRACTURE_CHIPS };
   Object.assign(globalThis, module.exports);
 }

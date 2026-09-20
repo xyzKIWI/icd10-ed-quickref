@@ -3,9 +3,20 @@
 // 瀏覽器由 build_html.py 把 lexicon.js 併在本檔前面同一 <script>，這些常數自然在作用域內，故略過 require。
 if (typeof module !== "undefined" && typeof require !== "undefined") require("./lexicon.js");
 
-function hasCJK(s){return /[一-鿿]/.test(s);}
+function canonicalText(s){
+  s=String(s==null?"":s);
+  return typeof s.normalize==="function" ? s.normalize("NFKC") : s;
+}
+function hasCJK(s){return /[一-鿿]/.test(canonicalText(s));}
 function norm(q){
-  q = q.toLowerCase();
+  q = canonicalText(q).toLowerCase();
+  const rawForSide=q;
+  for(const [from,to] of QUERY_REWRITES) q=q.split(from).join(to);
+  if(/雙側|兩側|左右/.test(rawForSide) && !/\bbilateral\b/.test(q)) q+=" bilateral";
+  else{
+    if(/左/.test(rawForSide) && !/\bleft\b/.test(q)) q+=" left";
+    if(/右/.test(rawForSide) && !/\bright\b/.test(q)) q+=" right";
+  }
   // cont=挫傷慣用縮寫(2026-08-25)：整句只有 cont 時直接視為 contusion；否則僅在句中同時有
   // 部位詞(TRAUMA_PART)時展開——cont dermatitis(=contact)、cont seizure 等非外傷語境不動。
   if(/^cont\.?$/.test(q.trim())) q="contusion";
@@ -153,8 +164,9 @@ function indexEntry(e,kind){
     axhay=" "+axToks.join(" ")+" ";
   }
   // unspecified/未明示 旗標：bare query 同分時優先（急診慣用 unspecified 碼）
-  const unspec = /unspecified/i.test(e.en) || /未明示/.test(e.zh||"");
-  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh:e.zh,unspec};
+  const zh=canonicalText(e.zh||"");
+  const unspec = /unspecified/i.test(e.en) || /未明示/.test(zh);
+  return {e,kind,toks,hay:" "+toks.join(" ")+" ",axToks,axhay,zh,unspec};
 }
 function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   let acc=0, anyMatch=false, polarityPen=0;   // acc = Σ best·idf（命中的資訊量）
@@ -208,7 +220,236 @@ function scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,covFloor){
   // 讓現行病碼優先(oral cancer→C06 勝 Z85 口腔癌病史、ischemic stroke→I63 勝 Z86、PUD→K27 勝 Z87)。
   // Z88 藥物過敏、Z91 過敏狀態等「現行狀態」碼不在此列(那是正確碼)。
   if(/^Z(8[0567]|12)/.test(item.e.c) && !qtoks.some(t=>/histor|\bhx\b|\bold\b|previous|prior|family|screen|status|post|survivor|病史|個人史|家族史|篩檢|舊|陳舊|曾/.test(t))) pen+=0.5;
+  // 未提及的高風險限定詞降權：一般 DM/COPD/CAD/脂肪肝/GERD 不應自動升級為
+  // 高血糖、急性惡化、心絞痛、酒精性或食道炎。"without X" 是排除 X，不予懲罰。
+  for(const [term,p] of SAFETY_QUALIFIERS){
+    if(!hay.includes(" "+term+" ") || qhas(qtoks,term)) continue;
+    const before=new RegExp("\\bwithout(?:\\s+\\w+){0,3}\\s+"+term+"\\b");
+    if(before.test(hay)) continue;
+    pen+=p;
+  }
+  // 產科章碼在未提妊娠/產後時不可因常見碼加權跑到一般成人診斷前面。
+  if(item.e.c.startsWith("O") && !qtoks.some(t=>/pregnan|gestation|trimester|maternal|childbirth|puerper|postpartum|妊娠|孕|產後|生產/.test(t))) pen+=0.48;
   return cov - pen;
+}
+
+function uniqueStrings(xs){
+  const seen=new Set(), out=[];
+  for(const x of xs){
+    const v=canonicalText(x).replace(/\s+/g," ").trim();
+    if(!v) continue;
+    const k=v.toLowerCase();
+    if(!seen.has(k)){seen.add(k);out.push(v);}
+  }
+  return out;
+}
+
+const DIAG_HINT_RE = /pain|shortness of breath|dyspnea|fractur|sprain|contus|lacerat|injur|pneumonia|diabet|hypertension|failure|infection|fever|cough|hematur|neuropath|hyperglyc|bleed|hemorrhage|sepsis|disease|syndrome|arthritis|cancer|tumou?r|edema|nausea|vomit|疼痛|痛|骨折|扭傷|挫傷|撕裂|外傷|肺炎|糖尿病|高血壓|衰竭|感染|發燒|發熱|咳嗽|呼吸困難|血尿|神經病變|高血糖|出血|敗血|疾病|症候群|關節炎|腫瘤|癌|水腫|噁心|嘔吐/i;
+function looksLikeDiagnosis(s){
+  if(DIAG_HINT_RE.test(s)) return true;
+  return canonicalText(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+    .some(t=>Object.prototype.hasOwnProperty.call(ABBR,t));
+}
+const BLOCKING_AMBIGUOUS_ABBR = new Set(["cp","pe","ra","ms","pta","ca","af","loc","pn"]);
+const EXPLICIT_INJURY_RE=/contus|fractur|sprain|lacerat|abrasion|bruise|wound|injur|挫傷|骨折|扭傷|裂傷|撕裂|擦傷|瘀傷|外傷/i;
+function expandBilateralInjury(s){
+  if(!EXPLICIT_INJURY_RE.test(s)) return [s];
+  if(/\bbilateral\b/i.test(s)) return [s.replace(/\bbilateral\b/ig,"left"),s.replace(/\bbilateral\b/ig,"right")];
+  if(/雙側|雙邊|兩側/.test(s)) return [s.replace(/雙側|雙邊|兩側/g,"左側"),s.replace(/雙側|雙邊|兩側/g,"右側")];
+  return [s];
+}
+
+function splitClinicalQuery(q){
+  q=canonicalText(q).replace(/\r\n?/g,"\n").trim();
+  // 明確外傷的常見雙側寫法先正規化，避免「左、右…」被頓號切成只有「左」的無效查詢。
+  if(EXPLICIT_INJURY_RE.test(q)){
+    q=q.replace(/\b(?:left\s*(?:and|\/)\s*right|right\s*(?:and|\/)\s*left)\b/gi,"bilateral");
+    q=q.replace(/左\s*、\s*右|右\s*、\s*左|左右|右左/g,"雙側");
+  }
+  // 既有急診尾綴不是第二個診斷，先移除，避免逗號被誤判為多診斷。
+  q=q.replace(/[,;，；]?\s*(cause|focus|etiology)\s+(to\s+be\s+)?determin\w*/gi," ").trim();
+  if(!q) return [];
+
+  // 同一糖尿病主詞帶兩個併發症：保留主詞到兩組，避免第二組失去 diabetes 語境。
+  let m=q.match(/^(.+?\bdiabetes(?:\s+mellitus)?)\s+with\s+(.+?)\s+and\s+(.+)$/i);
+  if(m && looksLikeDiagnosis(m[2]) && looksLikeDiagnosis(m[3])) return [m[1]+" with "+m[2],m[1]+" with "+m[3]];
+  m=q.match(/^(.+?糖尿病)\s*合併\s*(.+?)(?:及|與|和)\s*(.+)$/i);
+  if(m && looksLikeDiagnosis(m[2]) && looksLikeDiagnosis(m[3])) return [m[1]+"合併"+m[2],m[1]+"合併"+m[3]];
+
+  // DM/HTN + CKD 是組合碼且常另需 CKD stage 碼：保留完整查詢，另開 CKD 組。
+  m=q.match(/^(.*(?:diabet|hypertension|糖尿病|高血壓).*?)(?:\s+with\s+|\s*合併\s*)(.*(?:chronic kidney|ckd|慢性腎).*)$/i);
+  if(m) return [q,m[2]];
+
+  // due to 通常同時包含病因與表現，應分組，不把 token 混成不存在的單一診斷。
+  m=q.match(/^(.+?)\s+due\s+to\s+(.+)$/i);
+  if(m && looksLikeDiagnosis(m[1]) && looksLikeDiagnosis(m[2])) return [m[1],m[2]];
+
+  // with 只拆已知需要兩碼的高頻組合；其餘保留 ICD 組合診斷語意。
+  m=q.match(/^(.+?)\s+with\s+(.+)$/i);
+  if(m && looksLikeDiagnosis(m[1]) && /respiratory failure|hematuria|呼吸衰竭|血尿/i.test(m[2])) return [m[1],m[2]];
+
+  // 明確分隔符永遠分；and/及/與/和/合併則僅在兩側都像診斷時分，避免 head and neck 等解剖片語。
+  const hard=q.split(/\s*(?:;|；|\n|、)\s*/).filter(Boolean);
+  const out=[];
+  for(const part of hard){
+    const mm=part.match(/^(.+?)(?:\s+and\s+|\s*&\s*|\s*\+\s*|\s*(?:及|與|和|合併)\s*)(.+)$/i);
+    if(mm && looksLikeDiagnosis(mm[1]) && looksLikeDiagnosis(mm[2])) out.push(mm[1],...splitClinicalQuery(mm[2]));
+    else out.push(part);
+  }
+  return uniqueStrings(out);
+}
+
+function analyzeQuery(q){
+  // 保留換行給 splitClinicalQuery 當可靠分句；只壓縮同一行的水平空白。
+  const raw=canonicalText(q).replace(/\r\n?/g,"\n").replace(/[\t\f\v ]+/g," ").trim();
+  if(!raw) return {queries:[],warnings:[],blocked:false};
+  const warnings=[];
+  for(const [abbr,msg] of Object.entries(AMBIGUOUS_ABBR)){
+    if(new RegExp("(^|[^a-z0-9])"+abbr+"([^a-z0-9]|$)","i").test(raw)) warnings.push(msg);
+  }
+
+  const clauses=splitClinicalQuery(raw);
+  const active=[];
+  for(let clause of clauses){
+    let low=clause.toLowerCase().trim();
+    const negEn=/^(?:no\b|denies?\b|denied\b|negative\s+for\b|(?:no|without)\s+evidence\s+of\b|absence\s+of\b|ruled?\s+out\b|r\s*\/\s*o\b|exclude(?:d)?\b)/i;
+    const uncertainEn=/^(?:possible|possibly|probable|probably|suspected?|suspicious\s+for|concern\s+for|consider|likely|may\s+be|could\s+be|query)\b/i;
+    const negZh=/^(?:否認|否定|未見|未發現|排除|已排除|沒有|無證據|無明顯|無任何|無(?:肺炎|糖尿病|骨折|胸痛|感染|出血|發燒|發熱|呼吸困難|心臟衰竭|腫瘤|癌))/;
+    const uncertainZh=/^(?:疑似|懷疑|考慮|可能|待排|不排除)/;
+    const uncertainAnywhere=/\b(?:possible|possibly|probable|probably|suspected?|suspicious\s+for|concern\s+for|may\s+be|could\s+be|rule\s+out|r\s*\/\s*o)\b/i;
+    const uncertainZhAnywhere=/(?:疑似|懷疑|考慮|可能|待排|不排除)/;
+    const negAnywhere=/\b(?:denies?|denied|negative\s+for|(?:no|without)\s+evidence\s+of|absence\s+of|ruled?\s+out)\b/i;
+    const negZhAnywhere=/(?:否認|否定|未見|未發現|已排除|排除)/;
+    // 只在逗號後明確另起否定/不確定 assertion 時保留前段；一般 ICD 描述中的逗號不拆。
+    const scoped=clause.match(/^(.*?)[,，]\s*(.+)$/);
+    if(scoped&&scoped[1].trim()){
+      const tail=scoped[2].trim(), tailLow=tail.toLowerCase();
+      if(uncertainEn.test(tailLow)||uncertainZh.test(tail)){
+        clause=scoped[1].trim(); low=clause.toLowerCase();
+        warnings.push("已略過逗號後的不確定診斷：「"+tail+"」；請確認為確診後再查碼。");
+      }else if(negEn.test(tailLow)||negZh.test(tail)){
+        clause=scoped[1].trim(); low=clause.toLowerCase();
+        warnings.push("已略過逗號後的否定診斷：「"+tail+"」。");
+      }
+    }
+    // assertion scope 截短後需重新判斷；例如「CP, no fever」不可把 CP 當確診放行。
+    const bareAbbr=low.replace(/[^a-z0-9]/g,"");
+    if(BLOCKING_AMBIGUOUS_ABBR.has(bareAbbr)){
+      if(AMBIGUOUS_ABBR[bareAbbr]) warnings.push(AMBIGUOUS_ABBR[bareAbbr]);
+      warnings.push("單獨縮寫 "+clause.trim()+" 無法安全判定，請輸入完整診斷名稱。");
+      continue;
+    }
+    if(uncertainEn.test(low)||uncertainZh.test(clause)||uncertainAnywhere.test(low)||uncertainZhAnywhere.test(clause)){
+      warnings.push("已略過不確定診斷：「"+clause+"」；請確認為確診後再查碼。");
+      continue;
+    }
+    if(negEn.test(low)||negZh.test(clause)||negAnywhere.test(low)||negZhAnywhere.test(clause)){
+      warnings.push("已略過否定診斷：「"+clause+"」；否定內容不會當成確診搜尋。");
+      continue;
+    }
+
+    // 句中否定：保留否定詞前的確診/症狀，捨棄後段；ICD 常見的 without qualifier 則完整保留。
+    let cut=clause.match(/^(.*?)(?:\s+|[,，]\s*)(?:no\b|denies?\b|negative\s+for\b|(?:no|without)\s+evidence\s+of\b)(.+)$/i);
+    if(cut && cut[1].trim()){
+      clause=cut[1].trim();
+      warnings.push("已略過句中的否定內容：「"+cut[2].trim()+"」。");
+    }else{
+      cut=clause.match(/^(.*?)(?:[,，]\s*|\s+)(?:無|否認|未見|未發現|排除)(.+)$/);
+      if(cut && cut[1].trim()){
+        clause=cut[1].trim();
+        warnings.push("已略過句中的否定內容：「"+cut[2].trim()+"」。");
+      }
+    }
+    if(!(cut && cut[1] && clause===cut[1].trim())){
+      const keepWithout=/\bwithout\s+(?:loss\s+of\s+consciousness|coma|complications?|angina(?:\s+pectoris)?|bleeding|perforation|obstruction|esophagitis|hypoxia|hypercapnia|status\s+epilepticus|foreign\s+body|nail\s+damage|heart\s+failure|acute\s+cor\s+pulmonale)\b/i;
+      cut=clause.match(/^(.*?)\s+without\s+(.+)$/i);
+      if(cut && cut[1].trim() && !keepWithout.test(clause)){
+        clause=cut[1].trim();
+        warnings.push("已略過句中的否定內容：「"+cut[2].trim()+"」。");
+      }
+    }
+    if(clause) active.push(...expandBilateralInjury(clause));
+  }
+  const queries=uniqueStrings(active);
+  if(queries.length>1) warnings.push("已將複合敘述拆成 "+queries.length+" 組，避免側別或部位跨診斷串台。");
+  return {queries,warnings:uniqueStrings(warnings),blocked:queries.length===0};
+}
+
+function encounterChoice(e,q){
+  const allowed=String((e&&e.s7)||"").toUpperCase();
+  if(!allowed) return {value:"",needsChoice:false,message:""};
+  const raw=canonicalText(q).trim();
+  const compact=raw.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  // 直接輸入合法完整碼時保留第7碼，不要求再選一次。
+  for(const ch of allowed){
+    if(buildCode(e.c,ch).toUpperCase().replace(/[^A-Z0-9]/g,"")===compact){
+      return {value:ch,needsChoice:false,message:"已沿用輸入代碼的第7碼 "+ch+"。"};
+    }
+  }
+
+  const low=raw.toLowerCase();
+  const isFracture=/fracture/i.test((e&&e.en)||"") || /骨折/.test((e&&e.zh)||"");
+  const sequela=/\bsequela(?:e)?\b|後遺症?|陳舊性後遺/i.test(low);
+  const delayed=/delayed\s+healing|延遲癒合/i.test(low);
+  const nonunion=/non[- ]?union|未癒合|不癒合/i.test(low);
+  const malunion=/mal[- ]?union|畸形癒合/i.test(low);
+  const subsequent=/\bsubsequent(?:\s+encounter)?\b|follow[- ]?up|後續照護|後續就醫|追蹤/i.test(low)||delayed||nonunion||malunion;
+  // ICD-10-CM 的 initial encounter 指 active treatment，不等於「首次到本院就醫」。
+  const initial=/\binitial(?:\s+encounter)?\b|\bactive\s+treatment\b|初期照護|急性治療/i.test(low);
+  // 接受 open displaced fracture、fracture of tibia, open、開放性脛骨骨折等常見語序。
+  const explicitOpen=/\bopen\b[^,;.\n]{0,80}\bfracture\b|\bfracture\b[^;.\n]{0,80}\bopen\b|開放性?[^，；。\n]{0,20}骨折|骨折[^，；。\n]{0,20}開放性?/i.test(low);
+  const closed=/\bclosed\b[^,;.\n]{0,80}\bfracture\b|\bfracture\b[^;.\n]{0,80}\bclosed\b|閉鎖性?[^，；。\n]{0,20}骨折|骨折[^，；。\n]{0,20}閉鎖性?/i.test(low);
+  // 裸 type II/III 可能是糖尿病等其他分類；只有 Gustilo 明示，或已明示 open fracture 才當分型。
+  const gustilo3=/\bgustilo(?:\s+(?:type|grade|classification))?[\s:-]*(?:iii(?:a|b|c)?|3(?:a|b|c)?)\b/i.test(low);
+  const gustilo12=/\bgustilo(?:\s+(?:type|grade|classification))?[\s:-]*(?:i{1,2}|[12])\b/i.test(low) && !gustilo3;
+  const typed3=explicitOpen && /\b(?:type|grade)\s*(?:iii(?:a|b|c)?|3(?:a|b|c)?)\b(?!\s+(?:diabet|dm\b|mellitus))/i.test(low);
+  const typed12=explicitOpen && /\b(?:type|grade)\s*(?:i{1,2}|[12])\b(?!\s+(?:diabet|dm\b|mellitus))/i.test(low) && !typed3;
+  const zh3=explicitOpen && /(?:第\s*)?(?:III(?:A|B|C)?|3(?:A|B|C)?)\s*型/i.test(raw);
+  const zh12=explicitOpen && /(?:第\s*)?(?:I{1,2}|[12])\s*型/i.test(raw) && !zh3;
+  const open3=gustilo3||typed3||zh3;
+  const open12=(gustilo12||typed12||zh12)&&!open3;
+  const open=explicitOpen||open3||open12;
+  function chosen(ch,msg){
+    if(allowed.includes(ch)) return {value:ch,needsChoice:false,message:msg};
+    return {value:"",needsChoice:true,message:"此候選不支援判定出的第7碼 "+ch+"，請人工確認。"};
+  }
+  const stageCount=[initial,subsequent,sequela].filter(Boolean).length;
+  const healingCount=[delayed,nonunion,malunion].filter(Boolean).length;
+  if(stageCount>1) return {value:"",needsChoice:true,message:"查詢同時包含互斥的照護階段，請確認初期、後續或後遺症。"};
+  if(healingCount>1) return {value:"",needsChoice:true,message:"查詢同時包含互斥的癒合狀態，請確認延遲癒合、未癒合或畸形癒合。"};
+  if(open&&closed) return {value:"",needsChoice:true,message:"查詢同時包含開放性與閉鎖性骨折，請確認骨折型別。"};
+  if(sequela) return chosen("S","已辨識為後遺症照護。");
+
+  if(!isFracture){
+    if(subsequent) return chosen("D","已辨識為後續照護。");
+    if(initial) return chosen("A","已辨識為初期照護。");
+    return {value:"",needsChoice:true,message:"此代碼需要第7碼；請選擇初期、後續或後遺症。"};
+  }
+
+  const healing=delayed?"delayed":nonunion?"nonunion":malunion?"malunion":"routine";
+  // 有些骨折碼只用 B 表示所有開放性骨折（s7 有 B、沒有 C），不再細分 Gustilo。
+  const distinguishesOpenType=allowed.includes("C");
+  if(open && distinguishesOpenType && !open12 && !open3){
+    return {value:"",needsChoice:true,message:"開放性骨折需確認 Gustilo I/II 或 IIIA-C，不能自動猜第7碼。"};
+  }
+  if(!initial && !subsequent){
+    return {value:"",needsChoice:true,message:"骨折代碼需確認初期/後續/後遺症；未指定時不預設 A。"};
+  }
+  if(initial){
+    if(open && !distinguishesOpenType) return chosen("B","已辨識為初期照護之開放性骨折；此候選不細分 Gustilo 型別。");
+    if(open3) return chosen("C","已辨識為初期照護之 Gustilo IIIA-C 開放性骨折。");
+    if(open12) return chosen("B","已辨識為初期照護之 Gustilo I/II 開放性骨折。");
+    if(closed||!open) return chosen("A","已辨識為初期照護之閉鎖性骨折。");
+  }
+  // 不細分 Gustilo 的候選，後續照護沿用 D/G/K/P；不可套用不存在的 E/F 等組別。
+  const group=distinguishesOpenType?(open3?"open3":open12?"open12":"closed"):"closed";
+  const map={
+    routine:{closed:"D",open12:"E",open3:"F"},
+    delayed:{closed:"G",open12:"H",open3:"J"},
+    nonunion:{closed:"K",open12:"M",open3:"N"},
+    malunion:{closed:"P",open12:"Q",open3:"R"},
+  };
+  return chosen(map[healing][group],"已依照護階段、開放型別與癒合狀態選擇第7碼。");
 }
 function buildCode(stem,ch){
   if(!ch) return stem;
@@ -257,15 +498,41 @@ function codeSearch(IDX,q,scope){
   return res.slice(0,25);
 }
 
+const BONE_ALIASES = [
+  ["femur","femoral"],["radius","radial"],["ulna","ulnar"],["humerus","humeral"],
+  ["tibia","tibial"],["fibula","fibular"],["clavicle","clavicular"],["patella","patellar"],
+  ["metacarpal"],["metatarsal"],["phalanx","phalangeal"],["calcaneus","calcaneal"],
+  ["scaphoid"],["navicular"],["sternum","sternal"],["vertebra","vertebral"],
+];
+function recognizedBones(qtoks){
+  return BONE_ALIASES.filter(group=>qtoks.some(t=>group.includes(t)));
+}
+function itemHasRecognizedBone(item,groups){
+  if(!groups.length) return true;
+  const hay=item.hay+(item.axhay||"");
+  return groups.some(group=>group.some(t=>hay.includes(" "+t+" ")));
+}
+
 // prefixes：可選的 ICD 碼段白名單（小人圖用）。給了就「硬過濾」只留這些碼段，
 // 且查無時不 fallback 全域（防錯碼）。文字 q 仍負責在白名單內排序（如 back/chest 細分）。
 function searchCore(IDX,q,scope,prefixes){
   const explicitPf = (prefixes && prefixes.length) ? prefixes : null;   // 小人圖點擊傳入
+  q=canonicalText(q);
+  // 防呆：即使呼叫端忘了先 analyzeQuery，否定/不確定診斷也不回可複製碼；
+  // 多診斷則要求呼叫端逐 queries 搜尋，避免跨子句混合側別與部位。
+  if(!explicitPf){
+    const analysis=analyzeQuery(q);
+    if(analysis.blocked || analysis.queries.length>1) return [];
+    if(analysis.queries.length===1) q=analysis.queries[0];
+  }
   if(!q.trim() && !explicitPf) return [];
   if(!explicitPf && isCodeQuery(q) && !ABBR[q.trim().toLowerCase()]) return codeSearch(IDX,q,scope);  // 整串是已知縮寫(t1dm/t2dm)→走文字搜尋,別誤判成代碼反查
   ensureDF(IDX);
   const qtoks=norm(q), cjk=hasCJK(q);
-  const qHasSide = qtoks.includes("left")||qtoks.includes("right")||qtoks.includes("bilateral");
+  const hasLeft=qtoks.includes("left"), hasRight=qtoks.includes("right"), hasBilateral=qtoks.includes("bilateral");
+  const qSide=hasLeft&&!hasRight&&!hasBilateral?"left":hasRight&&!hasLeft&&!hasBilateral?"right":"";
+  const qHasSide=hasLeft||hasRight||hasBilateral;
+  const queryBones=recognizedBones(qtoks);
   const hasText = !!q.trim();
   const qIdf = qtoks.map(idf);
   let totalW=0; for(const w of qIdf) totalW+=w; if(totalW<=0) totalW=1;
@@ -276,6 +543,11 @@ function searchCore(IDX,q,scope,prefixes){
     for(const item of IDX){
       if(scope!=="all"&&item.kind!==scope)continue;
       if(pf && !pf.some(p=>item.e.c.startsWith(p))) continue;   // 硬過濾到指定碼段
+      // 明確單側不可回傳相反側/雙側；未明示側別仍保留，供使用者補資訊。
+      if(qSide==="left" && (item.hay.includes(" right ")||item.hay.includes(" bilateral "))) continue;
+      if(qSide==="right" && (item.hay.includes(" left ")||item.hay.includes(" bilateral "))) continue;
+      // 已辨識的具名骨是安全硬條件，避免股骨查詢混入肱骨、橈骨等可複製候選。
+      if(!itemHasRecognizedBone(item,queryBones)) continue;
       let sc;
       if(hasText){
         sc=scoreEntry(item,qtoks,cjk,qHasSide,qIdf,totalW,pf?0.05:undefined);
@@ -311,7 +583,7 @@ function searchCore(IDX,q,scope,prefixes){
   // 片語直接對應碼：命中已知臨床慣用語→把指定碼置頂
   if(!pf){
     // 原字串比對優先；查無再用 norm 後 token 比對(縮寫/複數/lt→left 展開)，讓 lt radial fx、contusion of limbs 等變體也命中
-    const forced = PHRASE_CODE[q.toLowerCase().trim().replace(/\s+/g," ")] || PHRASE_CODE[qtoks.join(" ")];
+    const forced = PHRASE_CODE[canonicalText(q).toLowerCase().trim().replace(/\s+/g," ")] || PHRASE_CODE[qtoks.join(" ")];
     if(forced){
       const set=new Set(forced), top=[];
       for(const code of forced){ const it=IDX.find(x=>x.e.c===code); if(it) top.push([999,it]); }
@@ -320,4 +592,5 @@ function searchCore(IDX,q,scope,prefixes){
   }
   return out;
 }
-if(typeof module!=="undefined")module.exports={SEV_ORDER,SYN,hasCJK,norm,levLE,indexEntry,scoreEntry,buildCode,whyHit,needMore,searchCore,isCodeQuery};
+if(typeof module!=="undefined")module.exports={SEV_ORDER,SYN,canonicalText,hasCJK,norm,levLE,indexEntry,scoreEntry,
+  buildCode,whyHit,needMore,analyzeQuery,encounterChoice,searchCore,isCodeQuery};

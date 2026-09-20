@@ -2,20 +2,29 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="台灣健保 2023 ICD-10-CM 中英文診斷碼速查，支援臨床縮寫與外傷部位查詢。">
 <title>ICD-10 速查</title>
 <style>
   :root{ color-scheme:light; --bg:#f4f7fb; --card:#ffffff; --panel:#eef3f8; --field:#ffffff;
-         --line:#c9d5e3; --txt:#142033; --sub:#5d7088; --muted:#7d8fa3;
+         --line:#c9d5e3; --txt:#142033; --sub:#52657b; --muted:#52657b;
          --accent:#1769d1; --accent2:#0f7f6e; --code:#8a5200; --hit:#087a47; --warn:#a85b00;
          --header:rgba(244,247,251,.94); --active:#dbeafe; --activeTxt:#0b3b78; --zone:#cbd8e6; --zoneOn:#1769d1;
          --body-line:#6f8298; --body-fill:rgba(255,255,255,.5); }
   :root[data-theme="dark"]{ color-scheme:dark; --bg:#0f1720; --card:#172230; --panel:#141d29; --field:#0b1119;
-         --line:#26344a; --txt:#e7eef7; --sub:#8aa0b8; --muted:#5d7088;
+         --line:#26344a; --txt:#e7eef7; --sub:#a3b4c8; --muted:#a3b4c8;
          --accent:#4ea1ff; --accent2:#39c6a8; --code:#ffd479; --hit:#7fe0a0; --warn:#ffb86b;
          --header:rgba(15,23,32,.94); --active:#193a5f; --activeTxt:#dceeff; --zone:#2b3d54; --zoneOn:#4ea1ff;
          --body-line:#7f95ad; --body-fill:rgba(255,255,255,.04); }
   *{box-sizing:border-box}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  button,a,input,textarea{touch-action:manipulation}
+  button:disabled{cursor:not-allowed;opacity:.65}
+  .query-warning{border:1px solid var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:10px;color:var(--txt);background:var(--panel);font-size:14px;line-height:1.6}
+  .query-group{font-size:14px;color:var(--sub);margin:18px 0 10px;overflow-wrap:anywhere}
+  .copybtn{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer;padding:3px 6px}
+  #status{font-size:13px;color:var(--warn);margin:8px 2px;line-height:1.5}
   body{margin:0;font-family:-apple-system,"PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
        background:var(--bg);color:var(--txt);-webkit-text-size-adjust:100%}
   header{position:sticky;top:0;background:var(--header);backdrop-filter:blur(14px);
@@ -180,26 +189,27 @@
     <button class="iconbtn" id="themeBtn" type="button" aria-label="切換明暗模式" title="切換明暗模式">☀</button>
   </div>
   <div class="searchbar">
-    <input id="q" autocomplete="off" autocapitalize="off" spellcheck="false"
+    <input id="q" aria-label="診斷、縮寫或 ICD-10-CM 代碼" maxlength="500" autocomplete="off" autocapitalize="off" spellcheck="false"
            placeholder="例：contusion left forearm、左前臂挫傷、lt radial fx、頭部撕裂傷">
     <button class="clearq" id="clearQ" type="button" aria-label="清空" title="清空">✕</button>
   </div>
   <div class="scope">
-    <button data-s="all" class="on">全部</button>
-    <button data-s="inj">外傷</button>
-    <button data-s="dx">一般診斷</button>
+    <button data-s="all" class="on" aria-pressed="true">全部</button>
+    <button data-s="inj" aria-pressed="false">外傷</button>
+    <button data-s="dx" aria-pressed="false">一般診斷</button>
   </div>
   <div class="fbpanel" id="fbPanel">
-    <div class="fbhint">查不到、排序怪怪的、或缺哪個縮寫？打一句告訴我們，會自動帶上你剛打的關鍵字，送出後彙整改進。<br>例：<b>查「AUR」尿滯留沒排第一</b> ／ <b>nasal bleeding 找不到流鼻血</b> ／ <b>沒有「OHCA」這個縮寫</b></div>
-    <textarea id="fbText" rows="2" placeholder="這次搜尋哪裡不對？(例：nasal bleeding 找不到 epistaxis)。會自動帶上你剛打的關鍵字，送出後集中彙整。"></textarea>
+    <div class="fbhint">請用<b>不含個資的模擬例子</b>描述問題，勿填姓名、身分證字號、病歷號或病歷全文。搜尋文字不會自動加入回饋；草稿僅留在本頁，重新整理即清除。複製草稿後，可自行貼到 Google 表單確認並送出。</div>
+    <textarea id="fbText" aria-label="回饋草稿（請勿填病人個資）" maxlength="1000" rows="2" placeholder="例：PNA 應能找到 pneumonia"></textarea>
     <div class="fbrow">
-      <button class="fbsave" id="fbSave" type="button">記下這筆</button>
-      <button class="fbview" id="fbCopy" type="button">複製全部回饋</button>
-      <button class="fbclear" id="fbClearAll" type="button">清空</button>
+      <button class="fbsave" id="fbCopy" type="button">複製草稿</button>
+      <a class="fbview" href="https://docs.google.com/forms/d/e/1FAIpQLSeGbSAsVojnBw67MvWjOcpyZcQUzcfNURqGohQ8uUuboh8fgg/viewform" target="_blank" rel="noopener noreferrer">開啟回饋表單</a>
+      <button class="fbclear" id="fbClearAll" type="button">清除舊版回饋</button>
       <span class="fbcount" id="fbCount"></span>
     </div>
   </div>
-  <div class="hint">支援英文/中文、縮寫(fx, lac, lt/rt)、拼錯字也能命中。點整個框框即複製代碼。</div>
+  <div class="hint">支援中英文與縮寫。結果為候選碼；請核對診斷條件與照護階段後再複製。查詢在本機處理，請勿輸入病人個資。</div>
+  <div id="status" role="status" aria-live="polite"></div>
   <label class="dotopt"><input type="checkbox" id="dotTog"> <span><b>去小數點</b>：複製時不含小數點（N20.0→N200）</span></label>
 </header>
 <main>
@@ -298,10 +308,10 @@
       </div>
     </div>
     <div class="multi hide" id="multiPanel">
-      <div class="multi-title"><b>多部位清單</b>：先選傷型再點部位可累積（同部位可記多種傷，如胸部撕裂傷＋肋骨骨折）；再點同組合取消、點列複製單碼</div>
+      <div class="multi-title"><b>多部位清單</b>：先選傷型再點部位可累積。點列檢視候選碼，確認診斷條件與照護階段後加入診斷清單。</div>
       <div id="multiList"></div>
       <div class="multi-actions">
-        <button type="button" id="multiAddAll">➕ 全部加入清單</button>
+        <button type="button" id="multiAddAll">逐項確認代碼</button>
         <button type="button" id="multiClearBtn">清除部位</button>
       </div>
     </div>
@@ -315,10 +325,10 @@
     <div class="refine-title" id="refineTitle"><b>小腿骨折細分</b></div>
     <div class="seg" id="refineSeg"></div>
   </div>
-  <div id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷預設帶出「初期照護」代碼，可切換第 7 碼</div></div>
+  <div id="out"><div class="empty">輸入診斷關鍵字開始查詢<br>外傷碼請確認照護階段</div></div>
 </main>
 <div class="disclaimer">
-  ⚠️ <b>免責聲明</b>：本工具僅供醫療專業人員臨床查詢之輔助參考，<b>非官方編碼系統</b>。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以正式編碼系統及醫療專業判斷為準；一般查詢純前端運算、不上傳，僅使用者主動送出回饋時會送出該次關鍵字與備註，不蒐集其他輸入內容。開發者不對因使用本工具所生之任何後果負責。
+  ⚠️ <b>使用說明</b>：本工具供醫療專業人員查詢候選碼，<b>非官方編碼系統</b>。採台灣健保使用的 2023 ICD-10-CM，最終編碼仍須核對官方索引、類目表及編碼規則。查詢在本機處理，回饋草稿不自動上傳或永久儲存；開啟 Google 表單後由使用者確認送出。網站託管服務可能記錄連線與頁面效能資料；請勿輸入病人個資。
 </div>
 <footer id="ver"></footer>
 
@@ -332,7 +342,21 @@
 const DB = /*DATA*/;
 const SEVENTH = DB.seventh;
 /*CORE*/
-function variantZh(e,ch){ return ch ? e.zh+"（"+(SEVENTH[ch]||ch)+"）" : e.zh; }
+function seventhLabel(e,ch){
+  if(ch==="B" && /fracture/i.test(e.en) && !e.s7.includes("C")) return "初期照護（開放性骨折）";
+  return SEVENTH[ch]||ch;
+}
+function validCode(code){return typeof code==="string"&&/^[A-Z][0-9][A-Z0-9](?:\.[A-Z0-9]{1,4})?$/.test(code);}
+function variantZh(e,ch){ return ch ? e.zh+"（"+seventhLabel(e,ch)+"）" : e.zh; }
+function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function status(message){document.getElementById("status").textContent=message;}
+async function copyText(text){
+  try{
+    if(!navigator.clipboard) throw new Error("clipboard unavailable");
+    await navigator.clipboard.writeText(text);
+    status("已複製"); return true;
+  }catch(e){status("無法存取剪貼簿，請選取顯示的內容手動複製。");return false;}
+}
 
 let IDX=[];
 function buildIndex(){
@@ -343,49 +367,64 @@ let SCOPE="all";
 let ACTIVE_PREFIXES=null;
 function search(q){
   const out=document.getElementById("out");
+  status("");
   const scoped = ACTIVE_PREFIXES && ACTIVE_PREFIXES.length;
   if(!q.trim() && !scoped){out.innerHTML='<div class="empty">輸入診斷關鍵字開始查詢</div>'+recentHtml();return;}
-  const qtoks=norm(q);
-  const res=searchCore(IDX,q,SCOPE,ACTIVE_PREFIXES);
-  if(!res.length){out.innerHTML='<div class="empty">查無結果<br>試試更簡短的關鍵字，或改用英文/中文</div>';return;}
-  out.innerHTML=res.map(([sc,item],i)=>card(item,qtoks,i)).join("");
+  const analysis=analyzeQuery(q);
+  let html=analysis.warnings.map(w=>`<div class="query-warning">${esc(w)}</div>`).join("");
+  let i=0;
+  for(const query of (analysis.blocked?[]:analysis.queries)){
+    const res=searchCore(IDX,query,SCOPE,ACTIVE_PREFIXES);
+    if(analysis.queries.length>1)html+=`<h2 class="query-group">${esc(query)}</h2>`;
+    html+=res.length?res.map(([sc,item])=>card(item,norm(query),i++,query)).join(""):'<div class="empty">查無可靠結果，請補上診斷全名、部位或分期。</div>';
+  }
+  out.innerHTML=html||'<div class="empty">請補上可確認的診斷或症狀。</div>';
 }
 
-function card(item,qtoks,i){
+function card(item,qtoks,i,query=""){
   const e=item.e;
+  if(!validCode(e.c)||!/^[ABCDEFGHJKMNPQRS]*$/.test(e.s7||""))return "";
   const chars = e.s7 ? e.s7.split("") : [""];
-  const def = chars.includes("A")?"A":chars[0];
+  const choice=encounterChoice(e,query),def=choice.value;
+  const code=choice.needsChoice?"":buildCode(e.c,def);
   const tag = item.kind==="inj"?'<span class="tag tr">外傷</span>':item.kind==="ext"?'<span class="tag tr">外因</span>':'<span class="tag">診斷</span>';
   const why = whyHit(item,qtoks);
   let chips="";
   if(e.s7 && e.s7.length){
     chips='<div class="chips">'+chars.map(ch=>
-      `<span class="chip${ch===def?' on':''}" onclick="event.stopPropagation();pick(${i},'${ch}')">${ch} ${SEVENTH[ch]||''}</span>`
+      `<button type="button" class="chip${ch===def?' on':''}" aria-pressed="${ch===def}" onclick="event.stopPropagation();pick(${i},'${ch}')">${ch} ${esc(seventhLabel(e,ch))}</button>`
     ).join("")+'</div>';
   }
-  const miss = needMore(e) ? `<div class="miss">⚠ ${needMore(e)}</div>` : "";
-  return `<div class="card" id="c${i}" data-stem="${e.c}" onclick="cardCopy(${i})">
-    <div class="row1"><span class="code" id="code${i}" data-code="${buildCode(e.c,def)}">${buildCode(e.c,def)}</span>${tag}<button class="addbtn" id="add${i}" onclick="event.stopPropagation();addToBasket(${i})">＋ 清單</button><span class="cphint">點框複製</span></div>
-    <div class="en">${e.en}</div>
-    <div class="zh" id="zh${i}">${variantZh(e,def)}</div>
-    ${why?`<div class="why">命中：<b>${why}</b></div>`:""}
+  const miss = needMore(e) ? `<div class="miss">⚠ ${esc(needMore(e))}</div>` : "";
+  return `<article class="card" id="c${i}" data-stem="${e.c}">
+    <div class="row1"><span class="code" id="code${i}" data-code="${code}">${code||e.c+"…"}</span>${tag}<button class="addbtn" id="add${i}" ${choice.needsChoice?'disabled':''} onclick="addToBasket(${i})">＋ 清單</button><button class="copybtn" id="copy${i}" ${choice.needsChoice?'disabled':''} onclick="cardCopy(${i})">複製代碼</button><span class="cphint">${choice.needsChoice?'請先選照護階段':''}</span></div>
+    <div class="en">${esc(e.en)}</div>
+    <div class="zh" id="zh${i}">${esc(variantZh(e,def))}</div>
+    ${why?`<div class="why">命中：<b>${esc(why)}</b></div>`:""}
+    <div class="miss encounter-message">${esc(choice.message||"")}</div>
     ${chips}${miss}
-  </div>`;
+  </article>`;
 }
 function pick(i,ch){
   const card=document.getElementById("c"+i); const stem=card.dataset.stem;
   const e=IDX.find(x=>x.e.c===stem&&x.kind)?.e || {c:stem,zh:""};
+  if(!validCode(e.c)||!e.s7?.includes(ch))return;
   const code=buildCode(stem,ch);
   const el=document.getElementById("code"+i);
   el.textContent=code; el.dataset.code=code;
   document.getElementById("zh"+i).textContent=variantZh(e,ch);
-  card.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.textContent.trim().startsWith(ch+" ")||c.textContent.trim()===ch));
+  card.querySelectorAll(".chip").forEach(c=>{const on=c.textContent.trim().startsWith(ch+" ")||c.textContent.trim()===ch;c.classList.toggle("on",on);c.setAttribute("aria-pressed",String(on));});
+  document.getElementById("add"+i).disabled=false;
+  document.getElementById("copy"+i).disabled=false;
+  card.querySelector(".cphint").textContent="";
+  card.querySelector(".encounter-message").textContent="";
 }
 function fmtCode(c){ return noDot ? c.replace(/\./g,"") : c; }   // 去小數點模式
-function cardCopy(i){
+async function cardCopy(i){
   const el=document.getElementById("code"+i);
+  if(!validCode(el.dataset.code)){status("請先選擇照護階段。");return;}
   const out=fmtCode(el.dataset.code);
-  navigator.clipboard?.writeText(out);
+  if(!await copyText(out))return;
   pushRecent(el.dataset.code, document.getElementById("zh"+i).textContent);
   const row=el.parentNode;
   let ok=row.querySelector(".copyok");
@@ -398,6 +437,7 @@ function cardCopy(i){
 let basket=[];   // {code, zh}（存原始含點碼，複製時才依去小數點模式格式化）
 function addToBasket(i){
   const code=document.getElementById("code"+i).dataset.code;
+  if(!validCode(code)){status("請先選擇照護階段。");return;}
   const zh=document.getElementById("zh"+i).textContent;
   const btn=document.getElementById("add"+i);
   if(basket.some(b=>b.code===code)){ return; }
@@ -412,41 +452,39 @@ function renderBasket(){
   if(!basket.length){ bar.classList.remove("show"); return; }
   bar.classList.add("show");
   document.getElementById("basketChips").innerHTML=basket.map((b,j)=>
-    `<span class="bchip" onclick="removeBasket(${j})" title="${b.zh}">${fmtCode(b.code)}<span class="x">✕</span></span>`).join("");
+    `<button type="button" class="bchip" onclick="removeBasket(${j})" aria-label="移除 ${b.code}" title="${esc(b.zh)}">${fmtCode(b.code)}<span class="x">✕</span></button>`).join("");
   document.getElementById("basketCopy").textContent="複製全部 ("+basket.length+")";
 }
-function copyBasket(){
+async function copyBasket(){
   const text=basket.map(b=>fmtCode(b.code)+"  "+b.zh).join("\n");   // 每行：碼 + 中文
-  navigator.clipboard?.writeText(text);
+  if(!await copyText(text))return;
   const btn=document.getElementById("basketCopy");
   btn.textContent="✓ 已複製 "+basket.length+" 碼";
   clearTimeout(btn._t); btn._t=setTimeout(renderBasket,1300);
 }
 
-// ===== 最近使用（localStorage）=====
+// 最近使用只保留本頁記憶體，避免共用電腦持續累積診斷紀錄。
+let recentCodes=[];
 function pushRecent(code,zh){
-  try{
-    let r=JSON.parse(localStorage.getItem("recent")||"[]");
-    r=r.filter(x=>x.code!==code); r.unshift({code,zh}); r=r.slice(0,12);
-    localStorage.setItem("recent",JSON.stringify(r));
-  }catch(e){}
+  if(!validCode(code))return;
+  recentCodes=[{code,zh},...recentCodes.filter(x=>x.code!==code)].slice(0,12);
 }
 function recentHtml(){
-  let r=[]; try{ r=JSON.parse(localStorage.getItem("recent")||"[]"); }catch(e){}
+  const r=recentCodes;
   if(!r.length) return "";
   return '<div class="recent"><div class="recent-title">最近使用（點即複製）</div><div class="recent-chips">'+
-    r.map(x=>`<span class="rchip" onclick="copyRecent(this,'${x.code}')" title="${x.zh}">${fmtCode(x.code)}</span>`).join("")+'</div></div>';
+    r.map(x=>`<button type="button" class="rchip" onclick="copyRecent(this,'${x.code}')" title="${esc(x.zh)}">${fmtCode(x.code)}</button>`).join("")+'</div></div>';
 }
-function copyRecent(el,code){
-  navigator.clipboard?.writeText(fmtCode(code));
+async function copyRecent(el,code){
+  if(!await copyText(fmtCode(code)))return;
   const t=el.textContent; el.textContent="✓ "+fmtCode(code); setTimeout(()=>el.textContent=t,900);
 }
 // 缺漏欄位提示（規則：骨折/開放傷未指明側別或部位時提醒）
 function needMore(e){
   const en=e.en.toLowerCase();
   if(en.includes("unspecified")){
-    if(en.includes("fracture")) return "未指明部位/側別，建議補：哪一段、左右、位移、開放或閉鎖";
-    return "此為「未明示」碼，若臨床已知側別/部位建議改用更精確碼";
+    if(en.includes("fracture")) return "此候選碼仍有未明示條件；請核對骨折部位、型態、位移及開放／閉鎖狀態。";
+    return "此候選含未明示條件；若已有更完整的診斷資訊，請核對較具體的代碼。";
   }
   return "";
 }
@@ -471,50 +509,43 @@ const dotTog=document.getElementById("dotTog");
 dotTog.checked=noDot;
 dotTog.onchange=()=>{ noDot=dotTog.checked; try{localStorage.setItem("nodot",noDot?"1":"0");}catch(e){} };
 
-// ===== 臨床回饋記錄（送共用 Google 表單 → Sheet 集中彙整，localStorage 作離線備援）=====
-const FB_FORM="https://docs.google.com/forms/d/e/1FAIpQLSeGbSAsVojnBw67MvWjOcpyZcQUzcfNURqGohQ8uUuboh8fgg/formResponse";
-const FB_ENTRY="entry.248204705";
-function fbSend(text){   // 背景送出，no-cors fire-and-forget；失敗不影響本機備援
-  try{ fetch(FB_FORM,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:FB_ENTRY+"="+encodeURIComponent(text)}); }catch(e){}
+// 回饋草稿不存檔、不自動送出，改由使用者在表單確認內容。
+function fbCountUpdate(){
+  let legacy=false;
+  try{legacy=!!(localStorage.getItem("fb")||localStorage.getItem("recent"));}catch(e){}
+  document.getElementById("fbCount").textContent=legacy?"此瀏覽器仍有舊版紀錄，可按左側清除。":"草稿僅留在本頁";
+  document.getElementById("fbClearAll").hidden=!legacy;
 }
-function fbLoad(){ try{return JSON.parse(localStorage.getItem("fb")||"[]");}catch(e){return [];} }
-function fbCountUpdate(){ const n=fbLoad().length; document.getElementById("fbCount").textContent = n?("已記 "+n+" 筆"):""; }
 const fbPanel=document.getElementById("fbPanel"), fbText=document.getElementById("fbText");
-document.getElementById("fbBtn").onclick=()=>{ fbPanel.classList.toggle("show"); if(fbPanel.classList.contains("show")){fbCountUpdate();fbText.focus();} };
-document.getElementById("fbSave").onclick=()=>{
-  const note=fbText.value.trim(); const q=document.getElementById("q").value.trim();
-  if(!note && !q){ return; }
-  const list=fbLoad();
-  const d=new Date(); const ts=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  list.push({t:ts, q:q, note:note});
-  try{ localStorage.setItem("fb",JSON.stringify(list)); }catch(e){}
-  fbSend(q ? `查「${q}」：${note||"(無備註)"}` : note);   // 同步送共用表單，日期由表單時間戳記
-  fbText.value=""; fbCountUpdate();
-  const b=document.getElementById("fbSave"); b.textContent="✓ 已送出"; setTimeout(()=>b.textContent="記下這筆",1200);
+document.getElementById("fbBtn").onclick=()=>{
+  fbPanel.classList.toggle("show");
+  document.getElementById("fbBtn").setAttribute("aria-expanded",String(fbPanel.classList.contains("show")));
+  if(fbPanel.classList.contains("show")){fbCountUpdate();fbText.focus();}
 };
-document.getElementById("fbCopy").onclick=()=>{
-  const list=fbLoad();
-  if(!list.length){ alert("還沒有回饋紀錄"); return; }
-  const text=list.map(x=>`[${x.t}] 查「${x.q||"-"}」：${x.note||"(無備註)"}`).join("\n");
-  navigator.clipboard?.writeText(text);
-  const b=document.getElementById("fbCopy"); b.textContent="✓ 已複製"; setTimeout(()=>b.textContent="複製全部回饋",1200);
+document.getElementById("fbCopy").onclick=async()=>{
+  const text=fbText.value.trim();
+  if(!text){status("請先輸入不含個資的回饋例子。");return;}
+  if(!await copyText(text))return;
+  status("草稿已複製，尚未送出。請到表單貼上並確認內容。");
 };
 document.getElementById("fbClearAll").onclick=()=>{
-  if(!fbLoad().length){ return; }
-  if(confirm("確定清空所有回饋紀錄？(複製過了嗎)")){ try{localStorage.removeItem("fb");}catch(e){} fbCountUpdate(); }
+  if(confirm("清除本瀏覽器舊版儲存的回饋與最近診斷紀錄？此操作無法復原，已送到表單的資料不受影響。")){
+    try{localStorage.removeItem("fb");localStorage.removeItem("recent");}catch(e){status("無法清除，請使用瀏覽器設定清除本站資料。");}
+    fbCountUpdate();
+  }
 };
 
 document.getElementById("meta").textContent=DB.version.split("(")[0];
-document.getElementById("ver").textContent=DB.version+"｜共 "+DB.entries.length+" 診斷條目（全章節）｜離線單檔";
+document.getElementById("ver").textContent=DB.version+(DB.metadata?.sourceUpdated?"｜資料更新 "+DB.metadata.sourceUpdated:"")+"｜共 "+DB.entries.length+" 診斷條目（全章節）｜離線單檔";
 buildIndex();
 document.getElementById("out").innerHTML='<div class="empty">輸入診斷關鍵字開始查詢</div>'+recentHtml();
 const qel=document.getElementById("q");
 let t;qel.addEventListener("input",()=>{clearTimeout(t);t=setTimeout(()=>search(qel.value),60);});
 let autoScoped=false;   // 外傷分頁是小人圖自動切的（非手動點分頁）；打字查新主題時自動退回「全部」
 function markScope(s){
-  document.querySelectorAll(".scope button").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".scope button").forEach(x=>{x.classList.remove("on");x.setAttribute("aria-pressed","false");});
   const btn=document.querySelector(`.scope button[data-s="${s}"]`);
-  if(btn) btn.classList.add("on");
+  if(btn){btn.classList.add("on");btn.setAttribute("aria-pressed","true");}
   SCOPE=s;
 }
 function setScope(s){
@@ -861,36 +892,29 @@ function hideRefine(){
 }
 // ===== 骨折快捷 chips(2026-08-25)：點骨折+部位後，常用精確碼一鍵複製/入籃。資料=lexicon.js FRACTURE_CHIPS =====
 let _CODE_LOOKUP=null;
-function chipEntry(c){ if(!_CODE_LOOKUP){ _CODE_LOOKUP={}; for(const it of IDX) _CODE_LOOKUP[it.e.c]=it.e; } return _CODE_LOOKUP[c]; }
+function chipEntry(c){ if(!_CODE_LOOKUP){ _CODE_LOOKUP={}; for(const it of IDX) if(validCode(it.e.c))_CODE_LOOKUP[it.e.c]=it.e; } return _CODE_LOOKUP[c]; }
 function hideChips(){ document.getElementById("chipsPanel").classList.add("hide"); document.getElementById("chipsWrap").innerHTML=""; }
 function showFractureChips(part,side){
   const list=FRACTURE_CHIPS[part]; if(!list) return;
   const key=side==="right"?"R":side==="left"?"L":"U";
+  const keys=side==="bilateral"?["R","L"]:[key];
   const sideText=side?SIDE_LABEL[side]:"未指定側別";
-  document.getElementById("chipsTitle").innerHTML=`<b>常用骨折快選</b> · ${sideText} · 點碼複製、＋加入清單`;
+  document.getElementById("chipsTitle").innerHTML=`<b>常用骨折快選</b> · ${sideText} · 點選後確認照護階段`;
   const wrap=document.getElementById("chipsWrap");
-  wrap.innerHTML=list.map(([label,codes])=>{
+  const seen=new Set();
+  wrap.innerHTML=list.flatMap(([label,codes])=>keys.map(key=>{
     const stem=codes[key]||codes.U;
+    if(seen.has(stem)) return "";
     const e=chipEntry(stem); if(!e) return "";
-    const ch=e.s7?(e.s7.includes("A")?"A":e.s7[0]):"";
-    const code=buildCode(e.c,ch), zh=variantZh(e,ch);
-    return `<div class="fchip" data-code="${code}" data-zh="${zh}" title="${zh}">`+
-      `<button type="button" class="fmain">${label}<code>${code}</code></button>`+
-      `<button type="button" class="fplus" title="加入本次診斷清單">＋</button></div>`;
-  }).join("");
+    seen.add(stem);
+    return `<div class="fchip" data-stem="${e.c}" title="${esc(e.zh)}">`+
+      `<button type="button" class="fmain" style="border-right:1px solid var(--line);border-radius:9px">${side==="bilateral"&&codes[key]?(key==="R"?"右側 ":"左側 "):""}${esc(label)}<code>${e.c}…</code></button></div>`;
+  })).join("");
   document.getElementById("chipsPanel").classList.remove("hide");
   wrap.querySelectorAll(".fchip").forEach(d=>{
-    const code=d.dataset.code, zh=d.dataset.zh;
     d.querySelector(".fmain").onclick=()=>{
-      navigator.clipboard?.writeText(fmtCode(code));
-      pushRecent(code,zh);
-      const c=d.querySelector(".fmain code"), t=c.textContent;
-      c.textContent="✓ 已複製"; clearTimeout(c._t); c._t=setTimeout(()=>{c.textContent=t;},1200);
-    };
-    d.querySelector(".fplus").onclick=()=>{
-      if(!basket.some(x=>x.code===code)){ basket.push({code,zh}); renderBasket(); }
-      const p=d.querySelector(".fplus");
-      p.textContent="✓"; clearTimeout(p._t); p._t=setTimeout(()=>{p.textContent="＋";},1200);
+      applyQuery(d.dataset.stem,null);
+      document.getElementById("out").scrollIntoView({block:"start"});
     };
   });
 }
@@ -945,23 +969,30 @@ function updateTraumaState(extra){
   state.textContent = extra || `${INJURY_LABEL[traumaInjury]} · ${SIDE_LABEL[traumaSideMode]}`;
 }
 function chooseSeg(container,attr,value){
-  document.querySelectorAll(`#${container} button`).forEach(b=>b.classList.toggle("on",b.dataset[attr]===value));
+  document.querySelectorAll(`#${container} button`).forEach(b=>{const on=b.dataset[attr]===value;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
 }
 document.querySelectorAll("#injurySeg button").forEach(b=>b.onclick=()=>{
   traumaInjury=b.dataset.injury; chooseSeg("injurySeg","injury",traumaInjury);
-  if(traumaInjury!=="fracture") hideChips();   // 換到非骨折傷型時收掉骨折快選
+  hideChips();hideRefine();
   // 多部位模式下每筆記自己的傷型，換傷型只影響「接下來新點的部位」，不重算已選清單
   if(multiMode){ updateTraumaState(`多部位模式 · 新增：${INJURY_LABEL[traumaInjury]}`); }
   else updateTraumaState();
 });
 document.querySelectorAll("#sideSeg button").forEach(b=>b.onclick=()=>{
   traumaSideMode=b.dataset.sideMode; chooseSeg("sideSeg","sideMode",traumaSideMode); updateTraumaState();
+  hideChips();hideRefine();
 });
 document.querySelectorAll(".zone").forEach(z=>z.addEventListener("click",()=>{
   const part=z.dataset.part;
   const autoSide=z.dataset.side || "";
   const side = traumaSideMode==="auto" ? autoSide : traumaSideMode==="none" ? "" : traumaSideMode;
   if(multiMode){   // 多部位模式：點了累積、再點取消，不收合面板、不跑單選查詢
+    if(side==="bilateral"){
+      const both=["left","right"].every(s=>multiSel.some(x=>x.part===part&&x.side===s&&x.injury===traumaInjury));
+      if(both)multiSel=multiSel.filter(x=>!(x.part===part&&["left","right"].includes(x.side)&&x.injury===traumaInjury));
+      else for(const s of ["left","right"]){if(!multiSel.some(x=>x.part===part&&x.side===s&&x.injury===traumaInjury))multiSel.push({part,side:s,injury:traumaInjury,zone:z});}
+      z.classList.toggle("on",multiSel.some(x=>x.zone===z));renderMulti();return;
+    }
     // 去重鍵含傷型：同一部位可累積多種傷（如胸部撕裂傷＋肋骨骨折）
     const j=multiSel.findIndex(s=>s.part===part&&s.side===side&&s.injury===traumaInjury);
     if(j>=0){
@@ -1011,9 +1042,8 @@ function multiSuggest(part,side,injury){
   const r=searchCore(IDX,q,"all",prefixes);
   if(!r.length) return null;
   const e=r[0][1].e;
-  const chars=e.s7 ? e.s7.split("") : [""];
-  const def=chars.includes("A")?"A":chars[0];
-  return {code:buildCode(e.c,def), zh:variantZh(e,def)};
+  if(!validCode(e.c))return null;
+  return {code:e.c, zh:e.zh,query:q,prefixes};
 }
 function multiLabel(s){
   return (s.side ? SIDE_LABEL[s.side] : "")+PART_LABEL[s.part]+" "+INJURY_LABEL[s.injury];
@@ -1026,21 +1056,16 @@ function renderMulti(){
   multiListEl.innerHTML=multiSel.map((s,i)=>{
     const sug=multiSuggest(s.part,s.side,s.injury);
     const body=sug
-      ? `<span class="mcode">${fmtCode(sug.code)}</span><span class="mzh">${sug.zh}</span>`
+      ? `<span class="mcode">${fmtCode(sug.code)}…</span><span class="mzh">${esc(sug.zh)}</span>`
       : `<span class="mzh">此部位無「${INJURY_LABEL[s.injury]}」對應碼</span>`;
-    return `<div class="multi-row" onclick="multiCopy(${i},this)" title="點一下複製此碼"><span class="mlabel">${multiLabel(s)}</span>${body}<button type="button" class="mdel" onclick="event.stopPropagation();multiRemove(${i})" title="移除">✕</button></div>`;
+    return `<div class="multi-row"><button type="button" class="copybtn" onclick="multiCopy(${i})">${esc(multiLabel(s))}：確認</button>${body}<button type="button" class="mdel" onclick="multiRemove(${i})" aria-label="移除 ${esc(multiLabel(s))}" title="移除">✕</button></div>`;
   }).join("");
 }
-function multiCopy(i,row){   // 點列複製單碼(同主結果卡片行為：複製+進最近使用)
+function multiCopy(i){
   const s=multiSel[i]; if(!s) return;
   const sug=multiSuggest(s.part,s.side,s.injury); if(!sug) return;
-  const out=fmtCode(sug.code);
-  navigator.clipboard?.writeText(out);
-  pushRecent(sug.code,sug.zh);
-  let ok=row.querySelector(".mok");
-  if(!ok){ ok=document.createElement("span"); ok.className="mok"; row.insertBefore(ok,row.querySelector(".mdel")); }
-  ok.textContent="✓ 已複製 "+out;
-  clearTimeout(ok._t); ok._t=setTimeout(()=>ok.remove(),1300);
+  applyQuery(sug.query,sug.prefixes);
+  document.getElementById("out").scrollIntoView({block:"start"});
 }
 function multiRemove(i){
   const s=multiSel.splice(i,1)[0];
@@ -1053,14 +1078,13 @@ document.getElementById("multiClearBtn").onclick=()=>{
   renderMulti();
 };
 document.getElementById("multiAddAll").onclick=function(){
-  let n=0;
-  for(const s of multiSel){
+  let i=0;
+  document.getElementById("out").innerHTML=multiSel.map(s=>{
     const sug=multiSuggest(s.part,s.side,s.injury);
-    if(sug && !basket.some(b=>b.code===sug.code)){ basket.push({code:sug.code,zh:sug.zh}); n++; }
-  }
-  renderBasket();
-  this.textContent = n ? `✓ 已加入 ${n} 碼` : "✓ 已在清單";
-  clearTimeout(this._t); this._t=setTimeout(()=>{ this.textContent="➕ 全部加入清單"; },1400);
+    if(!sug)return `<h2 class="query-group">${esc(multiLabel(s))}：查無結果</h2>`;
+    return `<h2 class="query-group">${esc(multiLabel(s))}</h2>`+searchCore(IDX,sug.query,"all",sug.prefixes).slice(0,5).map(([score,item])=>card(item,norm(sug.query),i++,sug.query)).join("");
+  }).join("");
+  document.getElementById("out").scrollIntoView({block:"start"});
 };
 multiTog.onclick=()=>{
   multiMode=!multiMode;
@@ -1086,11 +1110,21 @@ qel.addEventListener("input",()=>{
   if(autoScoped){ autoScoped=false; markScope("all"); }   // 小人圖切過去的外傷分頁，打字查下一題時自動回「全部」
   setTraumaVisible(false);
   hideRefine();
+  hideChips();
   toggleClearBtn();
 });
-clearQ.onclick=()=>{ qel.value=""; ACTIVE_PREFIXES=null; toggleClearBtn(); search(""); qel.focus(); };
+clearQ.onclick=()=>{ qel.value=""; ACTIVE_PREFIXES=null; hideRefine();hideChips();toggleClearBtn(); search(""); qel.focus(); };
 // 點小人圖標題可再次收合
 document.getElementById("traumaTitle").onclick=()=>setTraumaVisible(false);
+document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.classList.contains("on"))));
+document.querySelectorAll(".zone").forEach(z=>{
+  z.setAttribute("role","button");z.setAttribute("tabindex","0");
+  z.setAttribute("aria-label",(SIDE_LABEL[z.dataset.side]||"")+(PART_LABEL[z.dataset.part]||z.dataset.part));
+  z.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();z.dispatchEvent(new MouseEvent("click",{bubbles:true}));}});
+});
+const traumaTitle=document.getElementById("traumaTitle");
+traumaTitle.setAttribute("role","button");traumaTitle.setAttribute("tabindex","0");
+traumaTitle.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();setTraumaVisible(false);openTraumaBtn.focus();}});
 setTraumaVisible(true);
 qel.focus();
 </script>

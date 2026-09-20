@@ -73,7 +73,7 @@ const cases = [
   ["great toe fracture","S92.4"],
   ["lesser toe fracture","S92.5"],
   // 急診常見措辭（縮寫/尾綴/連字號）
-  ["pn","J18"],
+  ["pneumonia (PN)","J18"],              // PN 裸縮寫具歧義；補全名後才搜尋
   ["ugi bleeding","K92"],
   ["covid-19","U07.1"],
   ["fever, cause to be determined","R50.9"],
@@ -152,7 +152,7 @@ const cases = [
   ["paronychia","L03.019"],
   ["herpes simplex","B00.9"],
   ["carbon monoxide intoxication","T58.91"],
-  ["pta","J36"],                          // 原誤中凝血因子XI缺乏
+  ["peritonsillar abscess (PTA)","J36"],  // PTA 裸縮寫具歧義；補全名後才搜尋
   ["rosc","I46.9"],                       // 原誤中羅斯河病
   ["aecopd","J44.1"],
   ["adhf","I50.9"],

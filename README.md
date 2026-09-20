@@ -1,144 +1,102 @@
-# ICD-10 速查
+# ICD-10-CM 急診快速查詢
 
-輸入英文/中文診斷關鍵字 → 即時回傳 ICD-10-CM 代碼 + 官方繁中翻譯。單一 HTML 檔，純前端、可離線、零安裝。
+單檔、可離線使用的臺灣 2023 年版 ICD-10-CM 中英診斷碼搜尋工具。正式頁面：
+[https://tools.kiwi-ai.uk/icd10/](https://tools.kiwi-ai.uk/icd10/)
 
-## 🔗 線上版
+本工具是查詢輔助，不是最終診斷、申報或編碼判定。送出前仍須由臨床人員依病歷，核對官方 Alphabetic Index、Tabular List、Includes、Excludes、Code first／Use additional code、側別與第七碼照護階段。
 
-**https://xyzkiwi.github.io/icd10-ed-quickref/**
+## 資料版本與官方來源
 
-手機可加到主畫面當 App。一般查詢純前端運算、不上傳；僅當你主動送出 ✏️ 回饋時，才會送出該次關鍵字與備註。⚠️ 僅供臨床查詢輔助，非官方編碼系統，最終以正式系統與專業判斷為準（詳見網頁底部免責聲明）。
+- 代碼／中譯：健保署「2023年版_中文版 ICD-10-CM/PCS（正式版）」XLSX，工作表 `ICD-10-CM`。
+- 目前資料更新日：民國 115 年 8 月 27 日（2026-08-27）。
+- 臺灣健保門、住診申報自民國 114 年 1 月 1 日起採用 2023 年版。
+- 英文 Alphabetic Index 搜尋別名 `ax`：CMS 2023 ICD-10-CM Index；重新匯入中譯時會按代碼保留，不會靜默丟失。
 
-## 怎麼用
+官方連結：
 
-- **線上**：開上面網址，手機可加到主畫面。
-- **離線**：`dist/icd_ed.html`（＝ repo 根目錄 `index.html`，約 7 MB 單檔）寄給自己／丟雲端，點開即用，完全離線。
+- [健保署 ICD-10 現行版本](https://www.nhi.gov.tw/ch/np-3733-1.html)
+- [健保署 2023 年版正式檔下載頁](https://www.nhi.gov.tw/ch/lp-3847-1.html)
+- [健保署正式 XLSX](https://www.nhi.gov.tw/ch/dl-80147-c2be3cea667a4214802554bbca90bb49-1.xlsx)
+- [健保署 2023 年版編碼指引](https://www.nhi.gov.tw/ch/lp-3843-1.html)
+- [CMS 2023 Code Tables, Tabular and Index ZIP](https://www.cms.gov/files/zip/2023-code-tables-tabular-and-index.zip)
 
-查詢範例：
-- `contusion left forearm` → S50.12XA 左側前臂挫傷
-- `lt radial fx` → 左橈骨骨折候選（縮寫、拼錯字都能命中）
-- `GB stone` / `AGE` / `APN` / `AoD` / `t2dm` / `ptb` → 縮寫展開後命中
-- `n/v` / `overdose` / `unconscious` → 急診慣用語直接帶出正確碼（R11.2／T50.90x 中毒／R41.82 AMS）
-- `abscess anus` → K61.0 肛門膿瘍（俗稱靠官方字母索引命中）
-- `頭部撕裂傷` / `前臂挫傷` → 中文也能查
-- `N20.1` / `N20` / `S50.12XA` → 代碼反查診斷
-- 點整個框框即複製代碼；外傷碼可切換第 7 碼（初診 A／後續 D／後遺症 S／開放型等）
-- 勾「去小數點」（預設開啟）→ 複製時不含小數點（N20.0→N200），配合不吃小數點的診間系統；偏好存本機
-- ＋清單：把多個碼加進本次診斷籃，一鍵複製整段「碼＋中文」；最近使用會記住
-- ✏️ 回報：搜不準的字一句回報，集中彙整後據此優化排序/縮寫
-- 右上角切換明亮/暗黑；偏好存本機瀏覽器
+`build_data.py` 刻意只接受 XLSX，不匯入資料開放平臺的 CSV，以免轉碼後的 `?` 或亂碼污染中譯。115.08.27 官方 XLSX 本身有 8 個中譯儲存格含字面 `?`；建置時會保留已版控單檔內同碼的既有可信中譯，並把代碼記錄在 `metadata.translationFallbacks`。若找不到可信值，建置會直接失敗。
 
-### 外傷小人圖
+## 乾淨 clone：不下載即可測試
 
-前（Front）後（Back）人體圖同頁，點部位 → 自動帶出該部位的 ICD 碼段：
+需求：Python 3.10 以上與 Node.js。無需額外 Python 套件。
 
-- 先選傷型（挫傷/擦傷/撕裂傷/骨折/扭傷/燒燙傷，預設挫傷）和側別（自動/未指定/左/右/雙側），再點身體部位
-- **側別標示**：Front 左 Rt 右 Lt；Back 為背面故相反（左 Lt 右 Rt）。點下去會依解剖正確的左右帶碼
-- 點部位後用既有搜尋核心做「碼段白名單」硬過濾，查無不會 fallback 全域（防帶錯碼）
-- 骨頭等內部構造（tibia/fibula、radius/ulna）用點選後的情境式細分按鈕處理
-- **骨折快捷快選（chips）**：選「骨折」點腕/髖/踝/足/胸時，面板先列該部位常用精確碼（自動帶側別與第 7 碼 A，如左腕→「Colles' 骨折 S52.532A」）；點碼直接複製、點「＋」加入多碼籃；完整展開仍走下方結果卡與細分鈕。chips 碼全數經官方表逐碼驗證（chipsGuard 守門）
-- 開始搜尋後小人圖自動收合以保留結果版面
-- 點部位時分頁自動切到「外傷」；之後直接打字查下一個診斷會**自動切回「全部」**，不必手動換分頁（若是自己手動點的「外傷」分頁則保留不動）
-
-## 設計重點
-
-- **資料來源**：衛福部健保署官方「2023 中文版 ICD-10-CM」XLSX，**非機器翻譯**。
-  ⚠️ 不要用 data.gov.tw 的 CSV（Big5 編碼瑕疵，6,956 列中文變半形 `?`）；用 NHI 官方 XLSX（乾淨，僅 8 個「瘻」字 build 時補 `?管→瘻管`）。
-- **不自己組碼**：官方表已列出所有合法 billable 碼（含第 7 碼、X 補位），工具只做搜尋＋排序，保證代碼合法。
-- **全章節收錄**：38,301 條目。S/T/V/W/X/Y 有第 7 碼者以「診斷主幹」分組、前端重組第 7 碼；其餘直接收。
-- **分頁**：全部／外傷（S·T）／一般診斷。
-- **typo/同義詞/縮寫全本機處理、不用 LLM**：選了離線單檔，LLM 會破壞離線/零安裝優勢。
-  - 同義詞表（fx→fracture、stone→calculus、bite→bitten…）、急診縮寫表 ABBR（GB/UTI/COPD/AGE/APN…）、模糊比對（Levenshtein）、尾綴/連字號正規化
-  - **官方字母索引**：CMS FY2023 Alphabetic Index（62k 臨床用詞→碼）烤進每個碼的 `ax`(別名) 欄；別名命中封頂 0.5 分、正式碼名 1.0 主導，俗稱也查得到
-- **搜尋精準度**：
-  - **IDF 字詞權重**（上限 5.5）：罕見字主導、acute/unspecified 等常用字幾乎不計分 → 濾掉「只命中常用字」的洪水
-  - **臨床安全懲罰**（硬約束）：極性相反（traumatic↔nontraumatic、displaced↔nondisplaced）score−0.9；專一構造詞（tendon/nerve/artery 未打出）懲罰；未查左右時帶側性的碼降權；急診沒查 chronic 時慢性碼降權（acute 優先）；周產期 P 章與病史 Z 碼在成人急診語境降權（避免 SAH 誤中「生產傷害」、oral cancer 誤中「口腔癌病史」）
-  - **同分排序規則**：分數相同時 unspecified／未明示碼優先、碼名多餘條件少者優先（急診常用未明示碼自動上浮，不必逐條釘）
-  - **PHRASE_CODE**：臨床慣用語直接置頂（nasal bleeding→R04.0、coma→R40.20、stroke→I63.9、overdose→T50.90x、無力→R53.1、意識不清/unconscious→R41.82…）
-  - **縮寫稽核**：aod→主動脈剝離、aom→急性中耳炎、ptx/htx、vf、bppv、brbpr、appy、t1dm/t2dm、ptb 等；展開字串貼官方碼名（aod 用 dissection of aorta 而非 aortic dissection 以免混進腫瘤）；歧義過高者（ad/ap/ra/oa…）刻意不收
-- **打字外傷語意層**：打字命中「傷型詞（挫傷/擦傷/裂傷/骨折/鈍傷/血腫…）＋部位詞（顏面/胸/背/四肢…）」時，比照小人圖套用「部位×傷型→碼段白名單」硬過濾，杜絕中文外傷措辭滑進燒傷 T2x／生產傷害 P／大腦 S06／皮膚癌 C44。具名長骨的「遠端/近端/平台/Colles」自動轉成 ICD 官方「lower/upper end of 骨」（distal radius→S52.5、tibia plateau→S82.1）。手指序數自動對應（1st–5th finger→拇指/食指/中指/無名指/小指，middle finger 併片語比對不與「中段指骨」混淆）；骨折語境下骨名形容詞自動轉名詞形（fibular/humeral/femoral/tibial/clavicular…→官方 fibula/humerus 碼名，radial styloid、tibial spine 等官方形容詞構造除外）；cont（=contusion）僅在句中有部位詞時展開，避免誤吃 contact dermatitis。
-- **效能**：38k 條目單次查詢約 30 ms（indexOf 快篩 + 閘門化模糊比對）。
-- **單檔內嵌**：資料、搜尋邏輯、兩張底圖（base64）全部內嵌進 HTML（file:// 下瀏覽器擋外部 JSON 的 CORS）。搜尋邏輯抽成 `search_core.js`、詞表（同義詞/縮寫/片語/外傷部位表）抽成 `lexicon.js`，HTML 與測試共用同一份——加詞只動 `lexicon.js`。
-
-## 重新產生（pipeline）
-
-固定順序，每一步驗證方式如下：
-
-```bash
-# ── 1. 資料層（每年碼表更新時才跑）────────────────────────
-# 1a. 碼表 — NHI 官方 XLSX，工作表 'ICD-10-CM'
-curl -sL "https://www.nhi.gov.tw/ch/dl-80147-c2be3cea667a4214802554bbca90bb49-1.xlsx" -o data/icd_nhi.xlsx
-python3 src/build_data.py      # XLSX → build/icd_data.json（38,301 條目 + 常見診斷排序加權）
-
-# 1b. 字母索引（同義詞來源）— CMS FY2023，就地把別名烤進 icd_data.json 的 ax 欄
-curl -sL "https://www.cms.gov/files/zip/2023-code-tables-tabular-and-index.zip" -o data/index_src/got.zip
-cd data/index_src && unzip got.zip && cd ../..
-python3 src/build_index.py     # icd10cm_index_2023.xml → 別名寫入 icd_data.json
-
-# ── 2. 小人圖層（只在調整熱區/換底圖時跑）──────────────────
-#   底圖：design/chart_{front,back}_final.png（乾淨無標籤，前後對稱）
-python3 src/manual_zones.py    # 方框 ∩ silhouette → approxPolyDP 多邊形 → design/zones_{front,back}.json
-                               # 同時輸出 design/_manual_{front,back}.png 除錯疊圖（顏色塊＝熱區，肉眼校準）
-python3 src/build_figure.py    # zones json → 寫進 template.html 的兩個 SVG
-                               # 側別映射：front R→right、back R→left（背面解剖反轉）；標題自動帶左右
-
-# ── 3. 組裝 ──────────────────────────────────────────────
-python3 src/build_html.py      # 注入 icd_data.json + lexicon.js + search_core.js + 兩張底圖 base64 → dist/icd_ed.html
-
-# ── 4. 測試 ──────────────────────────────────────────────
-node src/test_search.js        # 221 案例 + 極性/側別/手指/中指/prefix/chips 守門，應全過
-
-# ── 5. 上線（GitHub Pages）────────────────────────────────
-cp dist/icd_ed.html index.html
-git add -A && git commit -m "update" && git push   # 1-2 分鐘後線上自動更新
+```powershell
+python src/restore_build.py
+python src/test_data.py
+node src/test_search.js
+node src/test_safety.js
+node --test src/test_ui.js
+python src/build_html.py
 ```
 
-**驗證小人圖熱區**：把所有 `.zone` 強制顯色截圖比對（不是用想的）——
+`restore_build.py` 從已版控的 `index.html` 還原內嵌 `build/icd_data.json` 與缺少的兩張 PNG。預設只補缺檔、不覆寫現有資料；只有明確需要重置建置輸入時才使用 `--force`。
 
-```bash
-python3 - <<'PY'
-html=open('dist/icd_ed.html',encoding='utf-8').read()
-inj='<style>.zone{opacity:.5!important;fill:#2563eb!important;stroke:#1e3a8a!important;stroke-width:2!important}</style>'
-open('/tmp/dbg.html','w',encoding='utf-8').write(html.replace('</head>',inj+'</head>'))
-PY
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
-  --force-device-scale-factor=2 --window-size=760,950 --virtual-time-budget=1800 \
-  --screenshot=/tmp/dbg.png "file:///tmp/dbg.html"
+`build_html.py` 若發現建置輸入缺少，也會先執行同樣的非覆寫還原。輸出為 `dist/icd_ed.html`，不會自行覆寫已版控的 `index.html`。
+
+## 以最新官方 XLSX 重建資料
+
+```powershell
+New-Item -ItemType Directory -Force data | Out-Null
+curl.exe -L --fail "https://www.nhi.gov.tw/ch/dl-80147-c2be3cea667a4214802554bbca90bb49-1.xlsx" -o "data/icd10cm_2023_zh_1150827.xlsx"
+
+# 先確保有既有 ax 與可信中譯可保留
+python src/restore_build.py
+python src/build_data.py --input data/icd10cm_2023_zh_1150827.xlsx
+python src/test_data.py
+node src/test_search.js
+node src/test_safety.js
+node --test src/test_ui.js
+python src/build_html.py
 ```
 
-## 部署架構
+建置器會從 XLSX 的「更新歷程」讀出來源日期、驗證列數與欄位、計算來源 SHA-256，並把資料日期、來源 URL、筆數、保留的 `ax` 數量及中譯回退清單寫入 JSON metadata。輸出採暫存檔後原子替換，驗證失敗不會產出半套資料。
 
-- repo：`xyzKIWI/icd10-ed-quickref`（public）
-- GitHub Pages：`main` 分支根目錄 `index.html` → 自動發佈
-- repo 只含 `index.html` + `src/` + `design/`（含底圖與 zones）+ README；大型原始資料（XLSX/zip/CSV）走 `.gitignore`
+只想驗證官方檔而不寫入：
 
-## 檔案結構
-
-```
-data/    官方原始資料（XLSX、字母索引、損毀 CSV 備份）── .gitignore，不進版控
-src/
-  build_data.py     XLSX → build/icd_data.json（碼表 + 排序加權）
-  build_index.py    CMS 字母索引別名 → 烤進 icd_data.json（ax 欄）
-  lexicon.js        詞表資料層（同義詞/縮寫 ABBR/片語 PHRASE_CODE/外傷部位表）── 加詞只動這裡
-  search_core.js    搜尋邏輯（norm/IDF/懲罰/外傷語意層/排序）── HTML 與測試共用同一份
-  manual_zones.py   小人圖熱區：方框 ∩ silhouette → 多邊形 json
-  build_figure.py   zones json → 寫進 template.html 的 SVG（側別映射）
-  template.html     UI（CSS + SVG 小人圖 + JS）
-  build_html.py     注入資料 + 詞表 + 邏輯 + 底圖 base64 → dist/icd_ed.html
-  test_search.js    221 案例 + 守門函式
-design/
-  chart_{front,back}_final.png   小人圖乾淨底圖（內嵌進成品）
-  zones_{front,back}.json        熱區多邊形座標
-build/   icd_data.json（中間產物）
-dist/    icd_ed.html ← 最終成品，這個就是工具本體
+```powershell
+python src/build_data.py --input data/icd10cm_2023_zh_1150827.xlsx --check
 ```
 
-## 已知範圍與未來可擴充
+如要重新產生 CMS Alphabetic Index 別名，先將官方 ZIP 中的 `icd10cm_index_2023.xml` 放到 `data/index_src/`，再執行：
 
-- 全章節 billable ICD-10-CM 皆收錄；常見診斷排序加權只影響急診常見診斷的排序。
-- 小人圖：負責快速選外表部位；內部骨頭/關節用點選後的情境式細分按鈕處理（前臂/肘/腕/膝/踝的 radius/ulna/tibia/fibula 細分皆已具備）。
-- 回饋循環：✏️ 累積搜不準的字 → 集中彙整後補 `lexicon.js` 的片語/同義詞/排序（詞表與邏輯已分離，加詞不碰核心）。
-- 未來選配：輸入一段診斷描述、自動抽取候選診斷的選配模式，MVP 刻意不做。
+```powershell
+python src/build_index.py
+python src/test_data.py
+```
 
-## 免責聲明
+## 資料與搜尋回歸重點
 
-本工具僅供醫療專業人員臨床查詢之輔助參考，**非官方編碼系統**。代碼與中文名稱來源為衛福部健保署 2023 年版 ICD-10-CM 及 CMS 官方字母索引，可能存在錯漏、版本差異或更新延遲。最終編碼與診斷請以正式編碼系統及醫療專業判斷為準。一般查詢純前端運算、不上傳；僅當使用者主動送出回饋時，會送出該次關鍵字與備註，不蒐集其他輸入內容。
+`python src/test_data.py [JSON路徑]` 會檢查：
+
+- 38,301 個搜尋條目展開後須為 73,681 個完整 billable 碼，且不得重複。
+- 完整碼格式與 2023 全集 SHA-256 基準，以及 2026-08-27 來源日期。
+- 115.08.27 修正的 6 筆實際輸出中譯：`G56.30`–`G56.33`、`M80.0AXS`、`M97.8XXS`。
+- 第七碼分組後不得殘留「初期照護／後續照護／後遺症」字樣。
+- 中譯不得含 `?` 或 Unicode replacement character。
+- `ax` 不得大量遺失，metadata 計數須與實際資料一致。
+
+## 臨床與隱私護欄
+
+- 未明示照護階段時，不自動假設或補上第七碼 `A`；由使用者確認初期、後續或後遺症。
+- 多部位、側別與骨折快捷結果必須逐項確認，不把一個推論套用到所有項目。
+- 回饋內容只在目前頁面形成草稿；手動開啟 Google 表單，不把搜尋 query 或診斷內容附加到網址。
+- 不要在程式碼、Issue、測試資料、網址或回饋中放入姓名、病歷號、身分證字號、生日等可識別病人資訊。
+- 搜尋不到或結果相近時，回到官方 Index 與 Tabular List 核對；不要以模糊比對分數取代編碼規則。
+
+## 主要檔案
+
+- `index.html`：已版控、可部署的單檔網站，也是乾淨 clone 的還原來源。
+- `src/build_data.py`：官方 XLSX → 精簡 JSON，保留 `ax` 並阻擋有損中譯。
+- `src/restore_build.py`：由 `index.html` 還原忽略版控的建置輸入。
+- `src/test_data.py`：資料版本、內容與別名回歸檢查。
+- `src/search_core.js`、`src/lexicon.js`：搜尋、正規化與同義詞邏輯。
+- `src/template.html`：單檔頁面模板。
+- `src/build_html.py`：內嵌資料、程式與圖片，輸出 `dist/icd_ed.html`。
+
+`data/`、`build/`、`dist/` 均為忽略版控的衍生資料；正式可重現基準是已版控的來源程式與 `index.html`。
