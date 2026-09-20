@@ -101,6 +101,20 @@ for(const [q,code] of [
   ["PNA","J18.9"],["HFrEF","I50.20"],["HFpEF","I50.30"],
   ["OA","M19.90"],["rheumatoid arthritis (RA)","M06.9"],
 ]) expectTop(q,code);
+// 本站明確指定 PN 代表 pneumonia；大小寫／全形一致，PNA 保留相容。
+for(const q of ["PN","pn","Pn","ＰＮ"," PN ","PN.","pneumonia (PN)"]){
+  const result=C.analyzeQuery(q);
+  assert.strictEqual(result.blocked,false,`${q}: configured pneumonia abbreviation must be searchable`);
+  assert.deepStrictEqual(result.warnings,[],`${q}: PN must not retain an ambiguity warning`);
+  expectTop(q,"J18.9");
+}
+for(const q of ["no PN","denies PN","possible PN","r/o PN","疑似PN","否認PN"]){
+  assert.strictEqual(C.analyzeQuery(q).blocked,true,`${q}: PN must retain assertion safeguards`);
+  assert.deepStrictEqual(codes(q),[],`${q}: negated or uncertain PN is not an active diagnosis`);
+}
+assert.deepStrictEqual(C.analyzeQuery("PN and UTI").queries,["PN","UTI"]);
+assert.deepStrictEqual(C.analyzeQuery("PN, no fever").queries,["PN"]);
+expectTop("PN, no fever","J18.9");
 for(const q of ["CP","PE","RA","MS","PTA","AF","LOC"]){
   const result=C.analyzeQuery(q);
   assert.strictEqual(result.blocked,true,`${q}: bare high-ambiguity abbreviation must be blocked`);

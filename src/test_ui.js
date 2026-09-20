@@ -63,6 +63,7 @@ test('feedback does not auto-submit or persist query and note',()=>{
   assert.doesNotMatch(template,/formResponse|no-cors|localStorage\.setItem\(["']fb["']/);
   assert.match(template,/viewform/);
   assert.match(template,/maxlength="1000"/);
+  assert.match(template,/placeholder="例：PN 應能找到 pneumonia"/);
   assert.doesNotMatch(template,/maximum-scale=1/);
 });
 

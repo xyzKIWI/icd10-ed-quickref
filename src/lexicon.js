@@ -136,7 +136,6 @@ const AMBIGUOUS_ABBR = {
   "ms":"MS 可能代表多發性硬化、二尖瓣狹窄等，請改用完整診斷。",
   "ca":"CA 可能代表癌症、鈣或心跳停止，請改用完整診斷。",
   "loc":"LOC 可能代表意識喪失或意識程度，請確認。",
-  "pn":"PN 可能代表肺炎或周邊神經病變，請確認。",
   "pta":"PTA 可能代表扁桃腺周圍膿瘍、經皮血管成形術或其他院內縮寫，請改用全名。",
   "dm":"DM 未標示糖尿病型別；若已知第 1/第 2 型，請補充。",
 };
@@ -251,7 +250,8 @@ const PHRASE_CODE = {
   "bph":["N40.0"],"benign prostatic hyperplasia":["N40.0"],"攝護腺肥大":["N40.0"],"前列腺肥大":["N40.0"],
   "oa":["M19.90"],"osteoarthritis":["M19.90"],"退化性關節炎":["M19.90"],
   "ra":["M06.9"],"rheumatoid arthritis":["M06.9"],
-  "pna":["J18.9"],"community acquired pneumonia":["J18.9"],
+  // 本站使用者慣用 PN = pneumonia；PNA 保留為相容別名。
+  "pn":["J18.9"],"pna":["J18.9"],"community acquired pneumonia":["J18.9"],
   "ckd3":["N18.30"],"ckd 3":["N18.30"],"ckd stage 3":["N18.30"],"chronic kidney disease stage 3":["N18.30"],
   "ckd3a":["N18.31"],"ckd 3a":["N18.31"],"ckd stage 3a":["N18.31"],"chronic kidney disease stage 3a":["N18.31"],
   "ckd3b":["N18.32"],"ckd 3b":["N18.32"],"ckd stage 3b":["N18.32"],"chronic kidney disease stage 3b":["N18.32"],

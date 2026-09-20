@@ -200,7 +200,7 @@
   </div>
   <div class="fbpanel" id="fbPanel">
     <div class="fbhint">請用<b>不含個資的模擬例子</b>描述問題，勿填姓名、身分證字號、病歷號或病歷全文。搜尋文字不會自動加入回饋；草稿僅留在本頁，重新整理即清除。複製草稿後，可自行貼到 Google 表單確認並送出。</div>
-    <textarea id="fbText" aria-label="回饋草稿（請勿填病人個資）" maxlength="1000" rows="2" placeholder="例：PNA 應能找到 pneumonia"></textarea>
+    <textarea id="fbText" aria-label="回饋草稿（請勿填病人個資）" maxlength="1000" rows="2" placeholder="例：PN 應能找到 pneumonia"></textarea>
     <div class="fbrow">
       <button class="fbsave" id="fbCopy" type="button">複製草稿</button>
       <a class="fbview" href="https://docs.google.com/forms/d/e/1FAIpQLSeGbSAsVojnBw67MvWjOcpyZcQUzcfNURqGohQ8uUuboh8fgg/viewform" target="_blank" rel="noopener noreferrer">開啟回饋表單</a>
@@ -479,7 +479,6 @@ const AMBIGUOUS_ABBR = {
   "ms":"MS 可能代表多發性硬化、二尖瓣狹窄等，請改用完整診斷。",
   "ca":"CA 可能代表癌症、鈣或心跳停止，請改用完整診斷。",
   "loc":"LOC 可能代表意識喪失或意識程度，請確認。",
-  "pn":"PN 可能代表肺炎或周邊神經病變，請確認。",
   "pta":"PTA 可能代表扁桃腺周圍膿瘍、經皮血管成形術或其他院內縮寫，請改用全名。",
   "dm":"DM 未標示糖尿病型別；若已知第 1/第 2 型，請補充。",
 };
@@ -594,7 +593,8 @@ const PHRASE_CODE = {
   "bph":["N40.0"],"benign prostatic hyperplasia":["N40.0"],"攝護腺肥大":["N40.0"],"前列腺肥大":["N40.0"],
   "oa":["M19.90"],"osteoarthritis":["M19.90"],"退化性關節炎":["M19.90"],
   "ra":["M06.9"],"rheumatoid arthritis":["M06.9"],
-  "pna":["J18.9"],"community acquired pneumonia":["J18.9"],
+  // 本站使用者慣用 PN = pneumonia；PNA 保留為相容別名。
+  "pn":["J18.9"],"pna":["J18.9"],"community acquired pneumonia":["J18.9"],
   "ckd3":["N18.30"],"ckd 3":["N18.30"],"ckd stage 3":["N18.30"],"chronic kidney disease stage 3":["N18.30"],
   "ckd3a":["N18.31"],"ckd 3a":["N18.31"],"ckd stage 3a":["N18.31"],"chronic kidney disease stage 3a":["N18.31"],
   "ckd3b":["N18.32"],"ckd 3b":["N18.32"],"ckd stage 3b":["N18.32"],"chronic kidney disease stage 3b":["N18.32"],
@@ -989,7 +989,7 @@ function looksLikeDiagnosis(s){
   return canonicalText(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
     .some(t=>Object.prototype.hasOwnProperty.call(ABBR,t));
 }
-const BLOCKING_AMBIGUOUS_ABBR = new Set(["cp","pe","ra","ms","pta","ca","af","loc","pn"]);
+const BLOCKING_AMBIGUOUS_ABBR = new Set(["cp","pe","ra","ms","pta","ca","af","loc"]);
 const EXPLICIT_INJURY_RE=/contus|fractur|sprain|lacerat|abrasion|bruise|wound|injur|挫傷|骨折|扭傷|裂傷|撕裂|擦傷|瘀傷|外傷/i;
 function expandBilateralInjury(s){
   if(!EXPLICIT_INJURY_RE.test(s)) return [s];

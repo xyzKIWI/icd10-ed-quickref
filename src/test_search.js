@@ -73,7 +73,7 @@ const cases = [
   ["great toe fracture","S92.4"],
   ["lesser toe fracture","S92.5"],
   // 急診常見措辭（縮寫/尾綴/連字號）
-  ["pneumonia (PN)","J18"],              // PN 裸縮寫具歧義；補全名後才搜尋
+  ["pn","J18.9"],                       // 本站慣用 PN = pneumonia，直接查詢。
   ["ugi bleeding","K92"],
   ["covid-19","U07.1"],
   ["fever, cause to be determined","R50.9"],

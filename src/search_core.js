@@ -250,7 +250,7 @@ function looksLikeDiagnosis(s){
   return canonicalText(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
     .some(t=>Object.prototype.hasOwnProperty.call(ABBR,t));
 }
-const BLOCKING_AMBIGUOUS_ABBR = new Set(["cp","pe","ra","ms","pta","ca","af","loc","pn"]);
+const BLOCKING_AMBIGUOUS_ABBR = new Set(["cp","pe","ra","ms","pta","ca","af","loc"]);
 const EXPLICIT_INJURY_RE=/contus|fractur|sprain|lacerat|abrasion|bruise|wound|injur|挫傷|骨折|扭傷|裂傷|撕裂|擦傷|瘀傷|外傷/i;
 function expandBilateralInjury(s){
   if(!EXPLICIT_INJURY_RE.test(s)) return [s];

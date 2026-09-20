@@ -5,6 +5,8 @@
 
 本工具是查詢輔助，不是最終診斷、申報或編碼判定。送出前仍須由臨床人員依病歷，核對官方 Alphabetic Index、Tabular List、Includes、Excludes、Code first／Use additional code、側別與第七碼照護階段。
 
+本站依使用者慣例將 **PN** 對應 **pneumonia（肺炎）**，可直接查詢；**PNA** 保留為相容別名。這是本站的縮寫約定，不代表所有醫療情境通用；否定或疑似診斷仍會被防呆規則排除。
+
 ## 資料版本與官方來源
 
 - 代碼／中譯：健保署「2023年版_中文版 ICD-10-CM/PCS（正式版）」XLSX，工作表 `ICD-10-CM`。
