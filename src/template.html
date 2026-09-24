@@ -663,9 +663,9 @@ const ANATOMICAL_MAP={
   scapula:injuryMap("S40","S41","S42.1","S43.31","scapula shoulder"),
   shoulder:injuryMap("S40","S41","S42","S43","shoulder"),
   upper_arm:injuryMap("S40","S41","S42","S43","upper arm"),
-  elbow:injuryMap("S50","S51",["S42.4","S52"],"S53","elbow forearm humerus"),   // +S42.4 肱骨遠端/髁上
+  elbow:injuryMap("S50","S51",["S42.4","S52"],"S53","elbow","elbow forearm humerus"),   // +S42.4 肱骨遠端/髁上
   forearm:injuryMap("S50","S51","S52","S53","forearm"),
-  wrist:injuryMap("S60","S61",["S52.5","S52.6","S62"],"S63","wrist distal radius"),   // +S52.5/.6 橈/尺骨遠端(Colles)
+  wrist:injuryMap("S60","S61",["S52.5","S52.6","S62"],"S63","wrist","wrist distal radius"),   // +S52.5/.6 橈/尺骨遠端(Colles)
   hand:injuryMap("S60","S61","S62","S63","hand"),
   palm:{
     abrasion:injuryEntry("S60.5","palm hand"),
@@ -691,7 +691,7 @@ const ANATOMICAL_MAP={
   hip:injuryMap("S70","S71","S72","S73","hip thigh"),
   pelvis:injuryMap("S30.0","S31.0",["S32.1","S32.2","S32.3","S32.4","S32.5","S32.6","S32.7","S32.8","S32.9"],"S33","pelvis pelvic ring sacrum coccyx pubis"),   // 骨盆環(排除 S32.0 腰椎),與 hip/股骨 S70-73 區隔
   thigh:injuryMap("S70","S71","S72","S73","thigh"),
-  knee:injuryMap("S80","S81",["S82.0","S82.1","S72.4"],"S83","knee patella"),   // +S82.1 脛骨近端/S72.4 股骨遠端;sprain 放寬 S83
+  knee:injuryMap("S80","S81",["S82.0","S82.1","S72.4"],"S83","knee","knee patella"),   // +S82.1 脛骨近端/S72.4 股骨遠端;sprain 放寬 S83
   lower_leg:injuryMap("S80","S81","S82","S83","lower leg"),
   achilles:injuryMap("S86.0","S86.0","S86.0","S86.0","achilles tendon"),
   ankle:injuryMap("S90","S91",["S82.5","S82.6","S82.8"],"S93","ankle malleolus"),   // 骨折=內/外踝(S82),非 S92 足骨
